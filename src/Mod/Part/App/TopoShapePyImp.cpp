@@ -741,6 +741,64 @@ PyObject* TopoShapePy::common(PyObject* args) const
     return makeShape(Part::OpCodes::Common, *getTopoShapePtr(), args);
 }
 
+PyObject* TopoShapePy::intersects(PyObject* args) const
+{
+    double tolerance = 0;
+    PyObject* pcObj;
+    if (!PyArg_ParseTuple(args, "O|d", &pcObj, &tolerance)) {
+        return nullptr;
+    }
+
+    PY_TRY
+    {
+        if (tolerance <= 0.0) {
+            tolerance = Precision::Confusion();
+        }
+
+        const TopoDS_Shape& edge = getTopoShapePtr()->getShape();
+        if (edge.IsNull()) {
+            Py_RETURN_FALSE;
+        }
+
+        std::vector<TopoShape> tools;
+        getPyShapes(pcObj, tools);
+
+        if (tools.empty()) {
+            Py_RETURN_FALSE;
+        }
+
+        Bnd_Box edgeBB;
+        BRepBndLib::Add(edge, edgeBB);
+        edgeBB.SetGap(tolerance);
+
+        for (const auto& tool : tools) {
+            const TopoDS_Shape& toolShape = tool.getShape();
+            if (toolShape.IsNull()) {
+                continue;
+            }
+
+            Bnd_Box toolBB;
+            BRepBndLib::Add(toolShape, toolBB);
+
+            // Fast Reject if there is no chance of an intersection
+            if (edgeBB.IsOut(toolBB)) {
+                continue;
+            }
+
+            // Expensive distance calculation
+            BRepExtrema_DistShapeShape distCalc(edge, toolShape);
+            if (distCalc.IsDone()) {
+                if (distCalc.Value() <= tolerance) {
+                    Py_RETURN_TRUE;
+                }
+            }
+        }
+
+        Py_RETURN_FALSE;
+    }
+    PY_CATCH_OCC
+}
+
 PyObject* TopoShapePy::section(PyObject* args) const
 {
     return makeShape(Part::OpCodes::Section, *getTopoShapePtr(), args);

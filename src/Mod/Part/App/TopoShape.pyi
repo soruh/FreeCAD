@@ -295,6 +295,19 @@ class TopoShape(ComplexGeoData):
         ...
 
     @constmethod
+    def intersects(self, tools: Union[TopoShape, Tuple[TopoShape, ...]], tolerance: float = 0.0, /) -> bool:
+        """
+        Check if this shape intersects with a given (list of) topo shape(s).
+
+        intersects(tool) -> bool
+          or
+        intersects((tool1, tool2, ...), [tolerance=0.0]) -> bool
+        --
+        Returns True if the minimum distance between shapes is <= tolerance.
+        """
+        ...
+
+    @constmethod
     def section(
         self, tool: Tuple[TopoShape, ...], tolerance: float = 0.0, approximation: bool = False, /
     ) -> TopoShape:

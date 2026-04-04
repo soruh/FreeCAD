@@ -1215,7 +1215,7 @@ class ObjectTagDressup:
         for i, tag in enumerate(self.pathData.sortedTags(rawTags)):
             if tag.enabled:
                 if prev:
-                    if prev.solid.common(tag.solid).Faces:
+                    if prev.solid.intersects(tag.solid):
                         Path.Log.info("Tag #%d intersects with previous tag - disabling\n" % i)
                         Path.Log.debug("this tag = %d [%s]" % (i, tag.solid.BoundBox))
                         tag.enabled = False
