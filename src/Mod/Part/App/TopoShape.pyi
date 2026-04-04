@@ -308,6 +308,20 @@ class TopoShape(ComplexGeoData):
         ...
 
     @constmethod
+    def closestIntersectionPoint(self, tool: Union[TopoShape, Tuple[TopoShape, ...]], refPt: Base.Vector3, tolerance: float = 0.0, /) -> Optional[Base.Vector3]:
+        """
+        Find the intersection point between this edge and a tool shape closest to a reference point.
+
+        intersects(tool, refPt) -> bool
+          or
+        intersects((tool1, tool2, ...), refPt, [tolerance=0.0]) -> bool
+        --
+        Returns the closest intersection point (to refPt) between this edge and any of the tool shapes
+        or None if there is no intersection.
+        """
+        ...
+
+    @constmethod
     def section(
         self, tool: Tuple[TopoShape, ...], tolerance: float = 0.0, approximation: bool = False, /
     ) -> TopoShape:

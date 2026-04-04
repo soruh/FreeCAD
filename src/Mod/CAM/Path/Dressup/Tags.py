@@ -235,16 +235,14 @@ class Tag:
     def nextIntersectionClosestTo(self, edge, solid, refPt):
         # debugEdge(edge, 'intersects_')
 
-        vertexes = edge.common(solid).Vertexes
-        if vertexes:
-            pt = sorted(vertexes, key=lambda v: (v.Point - refPt).Length)[0].Point
+        pt = edge.closestIntersectionPoint(solid, refPt)
+        if pt:
             debugEdge(
                 edge,
                 "intersects (%.2f, %.2f, %.2f) -> (%.2f, %.2f, %.2f)"
                 % (refPt.x, refPt.y, refPt.z, pt.x, pt.y, pt.z),
             )
-            return pt
-        return None
+        return pt
 
     def intersects(self, edge, param):
         def isDefinitelySmaller(z, zRef):

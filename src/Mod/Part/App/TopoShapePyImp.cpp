@@ -26,7 +26,9 @@
 #include <sstream>
 #include <boost/regex.hpp>
 
+#include <Bnd_Box.hxx>
 #include <BRep_Tool.hxx>
+#include <BRepAlgoAPI_Section.hxx>
 #include <BRepAlgo_NormalProjection.hxx>
 #include <BRepBndLib.hxx>
 #include <BRepBuilderAPI_Copy.hxx>
@@ -795,6 +797,91 @@ PyObject* TopoShapePy::intersects(PyObject* args) const
         }
 
         Py_RETURN_FALSE;
+    }
+    PY_CATCH_OCC
+}
+
+PyObject* TopoShapePy::closestIntersectionPoint(PyObject* args) const
+{
+    PyObject* pcObj;
+    PyObject* refPtObj;
+    double tolerance = 0.0;
+
+    if (!PyArg_ParseTuple(args, "OO|d", &pcObj, &refPtObj, &tolerance)) {
+        return nullptr;
+    }
+    std::vector<TopoShape> tools;
+    getPyShapes(pcObj, tools);
+    if (tools.empty()) {
+        Py_RETURN_NONE;
+    }
+
+    if (!PyObject_TypeCheck(refPtObj, &(Base::VectorPy::Type))) {
+        PyErr_SetString(PyExc_TypeError, "Second argument must be a Vector");
+        return nullptr;
+    }
+    Base::Vector3d refPnt = static_cast<Base::VectorPy*>(refPtObj)->value();
+    gp_Pnt referencePoint(refPnt.x, refPnt.y, refPnt.z);
+    
+    PY_TRY
+    {
+        if (tolerance <= 0.0) {
+            tolerance = Precision::Confusion();
+        }
+
+        const TopoDS_Shape& edge = getTopoShapePtr()->getShape();
+        if (edge.IsNull()) {
+            Py_RETURN_NONE;
+        }
+
+        Bnd_Box edgeBB;
+        BRepBndLib::Add(edge, edgeBB);
+        edgeBB.SetGap(tolerance);
+
+        double distanceToBestPoint = std::numeric_limits<double>::max();
+        gp_Pnt bestPoint;
+        bool found = false;
+
+        for (const auto& tool : tools) {
+            TopoDS_Shape toolShape = tool.getShape();
+            if (toolShape.IsNull()) continue;
+
+            Bnd_Box toolBB;
+            BRepBndLib::Add(toolShape, toolBB);
+            toolBB.SetGap(tolerance);
+
+            // Fast Reject if there is no chance of an intersection
+            if (edgeBB.IsOut(toolBB)) {
+                continue; 
+            }
+
+            // Expensive boolean check to find the intersection shape
+            BRepAlgoAPI_Section section(edge, toolShape);
+            section.Build();
+
+            if (!section.IsDone() || section.Shape().IsNull()) {
+                continue;
+            }
+                
+            // find the distance between the intersection shape and the reference point
+            TopoDS_Shape intersectionShape = section.Shape();
+            BRepExtrema_DistShapeShape distToRef(intersectionShape, BRepBuilderAPI_MakeVertex(referencePoint));
+            
+            if (distToRef.IsDone() && distToRef.NbSolution() > 0) {
+                double distance = distToRef.Value();
+                if (distance < distanceToBestPoint) {
+                    distanceToBestPoint = distance;
+                    bestPoint = distToRef.PointOnShape1(1);
+                    found = true;
+                }
+            }
+        }
+
+        if (found) {
+            return new Base::VectorPy(Base::Vector3d(bestPoint.X(), bestPoint.Y(), bestPoint.Z()));
+        }
+
+        Py_RETURN_NONE;
     }
     PY_CATCH_OCC
 }
