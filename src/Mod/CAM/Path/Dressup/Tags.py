@@ -695,8 +695,17 @@ class PathData:
         return (minZ, maxZ)
 
     def shortestAndLongestPathEdge(self):
-        edges = sorted(self.bottomEdges, key=lambda e: e.Length)
-        return (edges[0], edges[-1])
+        shortest = None
+        longest = None
+
+        for edge in self.bottomEdges:
+            if not longest or edge.Length > longest.Length:
+                longest = edge
+
+            if not shortest or edge.Length < shortest.Length:
+                shortest = edge
+
+        return (shortest, longest)
 
     def generateTags(
         self, obj, count, width=None, height=None, angle=None, radius=None, spacing=None
