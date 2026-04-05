@@ -30,6 +30,7 @@ import Path.Dressup.Utils as PathDressup
 import PathScripts.PathUtils as PathUtils
 import copy
 import math
+import cProfile
 
 # lazily loaded modules
 from lazy_loader.lazy_loader import LazyLoader
@@ -672,13 +673,20 @@ class PathData:
         self.wire, rapid, rapid_indexes = Path.Geom.wireForPath(path)
         self.rapid = _RapidEdges(rapid)
         if self.wire:
-            self.edges = self.wire.Edges
+            self.edges = list(self.wire.Edges)
         else:
             self.edges = []
         self.baseWire = self.findBottomWire(self.edges)
 
     def findBottomWire(self, edges):
-        minZ, maxZ = self.findZLimits(edges)
+        print("findZLimits:")
+        l = {
+            "self": self,
+            "edges": edges,
+        }
+        cProfile.runctx("minZ, maxZ = self.findZLimits(edges)", {}, l, sort="time")
+
+        minZ, maxZ = l['minZ'], l['maxZ']
         self.minZ = minZ
         self.maxZ = maxZ
         bottom = [
@@ -1044,15 +1052,13 @@ class ObjectTagDressup:
     def generateTags(self, obj, count):
         if self.supportsTagGeneration(obj):
             if self.pathData:
-                self.tags = self.pathData.generateTags(
-                    obj,
-                    count,
-                    obj.Width.Value,
-                    obj.Height.Value,
-                    obj.Angle,
-                    obj.Radius.Value,
-                    None,
-                )
+                print("generateTags:")
+                cProfile.runctx("self.tags = self.pathData.generateTags( obj, count, obj.Width.Value, obj.Height.Value, obj.Angle, obj.Radius.Value, None)", {}, {
+                    "self": self,
+                    "obj": obj,
+                    "count": count,
+                }, sort="time")
+                
                 obj.Positions = [tag.originAt(self.pathData.minZ) for tag in self.tags]
                 obj.Disabled = []
                 return False
@@ -1072,9 +1078,13 @@ class ObjectTagDressup:
         obj.Angle = fromObj.Angle
         obj.Radius = fromObj.Radius
 
-        self.tags = self.pathData.copyTags(
-            obj, fromObj, obj.Width.Value, obj.Height.Value, obj.Angle, obj.Radius.Value
-        )
+        print("copyTags:")
+        cProfile.runctx("self.tags = self.pathData.copyTags(obj, fromObj, obj.Width.Value, obj.Height.Value, obj.Angle, obj.Radius.Value)", {}, {
+            "self": self,
+            "obj": obj,
+            "fromObj": fromObj,
+        }, sort="time")
+        
         obj.Positions = [tag.originAt(self.pathData.minZ) for tag in self.tags]
         obj.Disabled = []
         return False
@@ -1294,7 +1304,11 @@ class ObjectTagDressup:
                     # else:
                     #    debugCylinder(tag.originAt(self.pathData.minZ), tag.fullWidth()/2, tag.actualHeight, "tag-%02d" % tagID)
 
-        obj.Path = self.createPath(obj, self.pathData, self.tags)
+        print("createPath:")
+        cProfile.runctx("obj.Path = self.createPath(obj, self.pathData, self.tags)", {}, {
+            "self": self,
+            "obj": obj,
+        }, sort="time")
 
     def setup(self, obj, generate=False):
         logger.debug("setup")
