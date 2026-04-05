@@ -27,6 +27,9 @@ import Path
 translate = FreeCAD.Qt.translate
 
 
+logger = Path.Log.getModuleLogger()
+
+
 def selection(verbose=False):
     """selection() ... return object if selected one operation or dressup.
     Allow to send error messages to Report view if verbose=True"""
@@ -36,17 +39,15 @@ def selection(verbose=False):
         selected = FreeCADGui.Selection.getSelection()
         if len(selected) != 1:
             if verbose:
-                Path.Log.warning(translate("CAM_Dressup", "Please select one toolpath object\n"))
+                logger.warning(translate("CAM_Dressup", "Please select one toolpath object\n"))
             return None
         if not selected[0].isDerivedFrom("Path::Feature"):
             if verbose:
-                Path.Log.warning(
-                    translate("CAM_Dressup", "The selected object is not a toolpath\n")
-                )
+                logger.warning(translate("CAM_Dressup", "The selected object is not a toolpath\n"))
             return None
         if not isOp(selected[0]):
             if verbose:
-                Path.Log.warning(
+                logger.warning(
                     translate("CAM_Dressup", "The selected object is not an operation or dressup\n")
                 )
             return None

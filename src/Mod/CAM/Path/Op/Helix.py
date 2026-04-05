@@ -36,11 +36,7 @@ import math
 
 from PySide.QtCore import QT_TRANSLATE_NOOP
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 translate = FreeCAD.Qt.translate
 
@@ -113,11 +109,11 @@ class ObjectHelix(PathCircularHoleBase.ObjectOp):
         data = list()
         idx = 0 if dataType == "translated" else 1
 
-        Path.Log.debug(enums)
+        logger.debug(enums)
 
         for k, v in enumerate(enums):
             data.append((v, [tup[idx] for tup in enums[v]]))
-        Path.Log.debug(data)
+        logger.debug(data)
 
         return data
 
@@ -325,7 +321,7 @@ class ObjectHelix(PathCircularHoleBase.ObjectOp):
             tooldiam = obj.ToolController.Tool.Diameter.Value
             if obj.OverrideProfileDiameter and obj.OverrideProfileDiameter.Value < tooldiam:
                 obj.OverrideProfileDiameter = 0
-                Path.Log.warning(
+                logger.warning(
                     translate(
                         "PathHelix",
                         "OverrideProfileDiameter can not be less than tool diameter {}".format(
@@ -542,13 +538,13 @@ class ObjectHelix(PathCircularHoleBase.ObjectOp):
 
     def circularHoleExecute(self, obj, holes):
         """circularHoleExecute(obj, holes) ... generate helix commands for each hole in holes"""
-        Path.Log.track()
+        logger.track()
 
         # validate that SafeHeight doesn't exceed ClearanceHeight
         safeHeight = obj.SafeHeight.Value
         clearanceHeight = obj.ClearanceHeight.Value
         if safeHeight > clearanceHeight:
-            Path.Log.warning(
+            logger.warning(
                 f"SafeHeight ({safeHeight}) is above ClearanceHeight ({clearanceHeight}). "
                 f"Using ClearanceHeight instead."
             )
@@ -734,7 +730,7 @@ class ObjectHelix(PathCircularHoleBase.ObjectOp):
                         )
 
                     if spiralOuterRadius <= spiralInnerRadius:
-                        Path.Log.warning(
+                        logger.warning(
                             translate(
                                 "PathHelix",
                                 "Spiral outer radius {} is equal or less than inner {}".format(

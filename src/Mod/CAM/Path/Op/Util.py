@@ -41,11 +41,7 @@ __doc__ = "Collection of functions used by various operations. The functions are
 
 PrintWireDebug = False
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 translate = FreeCAD.Qt.translate
 
@@ -107,7 +103,7 @@ def debugWire(label, w):
 def _orientEdges(inEdges):
     """_orientEdges(inEdges) ... internal worker function to orient edges so the last vertex of one edge connects to the first vertex of the next edge.
     Assumes the edges are in an order so they can be connected."""
-    Path.Log.track()
+    logger.track()
     # orient all edges of the wire so each edge's last value connects to the next edge's first value
     e0 = inEdges[0]
     # well, even the very first edge could be misoriented, so let's try and connect it to the second
@@ -152,7 +148,7 @@ def _isWireClockwise(w):
         v0 = e.valueAt(e.FirstParameter)
         v1 = e.valueAt(e.LastParameter)
         area = area + (v0.x * v1.y - v1.x * v0.y)
-    Path.Log.track(area)
+    logger.track(area)
     return area < 0
 
 
@@ -167,13 +163,13 @@ def orientWire(w, forward=True):
     If forward = False the wire is oriented counter clockwise.
     If forward = None the orientation is determined by the order in which the edges appear in the wire.
     """
-    Path.Log.debug("orienting forward: {}: {} edges".format(forward, len(w.Edges)))
+    logger.debug("orienting forward: {}: {} edges".format(forward, len(w.Edges)))
     wire = Part.Wire(_orientEdges(w.Edges))
     if forward is not None:
         if forward != _isWireClockwise(wire):
-            Path.Log.track("orientWire - needs flipping")
+            logger.track("orientWire - needs flipping")
             return Path.Geom.flipWire(wire)
-        Path.Log.track("orientWire - ok")
+        logger.track("orientWire - ok")
     return wire
 
 
@@ -233,7 +229,7 @@ def offsetWire(wire, base, offset, forward, Side=None, tolerance=0.01):
     happens in the XY plane.
     tolerance: Deflection tolerance for discretization. Must be positive if wire contains non-line/arc edges.
     """
-    Path.Log.track("offsetWire")
+    logger.track("offsetWire")
 
     # Pre-process the wire: approximate any non-line/arc edges with arcs and lines
     wire = approximateWire(wire, tolerance)
@@ -345,11 +341,11 @@ def offsetWire(wire, base, offset, forward, Side=None, tolerance=0.01):
 
     if wire.isClosed():
         if not base.isInside(owire.Edges[0].Vertexes[0].Point, offset / 2, True):
-            Path.Log.track("closed - outside")
+            logger.track("closed - outside")
             if Side:
                 Side[0] = "Outside"
             return orientWire(owire, forward)
-        Path.Log.track("closed - inside")
+        logger.track("closed - inside")
         if Side:
             Side[0] = "Inside"
         try:
@@ -460,18 +456,18 @@ def offsetWire(wire, base, offset, forward, Side=None, tolerance=0.01):
             for e0 in rightSideEdges:
                 if Path.Geom.edgesMatch(e, e0):
                     edges = rightSideEdges
-                    Path.Log.debug("#use right side edges")
+                    logger.debug("#use right side edges")
                     if not forward:
-                        Path.Log.debug("#reverse")
+                        logger.debug("#reverse")
                         edges.reverse()
                     return orientWire(Part.Wire(edges), None)
 
     # at this point we have the correct edges and they are in the order for forward
     # traversal (climb milling). If that's not what we want just reverse the order,
     # orientWire takes care of orienting the edges appropriately.
-    Path.Log.debug("#use left side edges")
+    logger.debug("#use left side edges")
     if not forward:
-        Path.Log.debug("#reverse")
+        logger.debug("#reverse")
         edges.reverse()
 
     return orientWire(Part.Wire(edges), None)

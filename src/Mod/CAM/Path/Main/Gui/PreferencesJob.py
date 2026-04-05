@@ -30,7 +30,7 @@ import json
 from FreeCAD import Units
 from PySide import QtCore, QtGui
 
-Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getModuleLogger(withLevel=Path.Log.Level.INFO)
 
 
 class JobPreferencesPage:

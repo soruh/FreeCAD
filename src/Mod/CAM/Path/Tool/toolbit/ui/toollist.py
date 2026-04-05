@@ -32,6 +32,9 @@ from PySide.QtCore import QMimeData
 from ..models.base import ToolBit
 from .tablecell import TwoLineTableCell, CompactTwoLineTableCell
 
+logger = Path.Log.getModuleLogger()
+
+
 # Role for storing the ToolBit URI string
 ToolBitUriRole = QtCore.Qt.UserRole + 1
 ToolBitUriListMimeType = "application/x-freecad-toolbit-uri-list-yaml"
@@ -55,15 +58,15 @@ class ToolBitListWidget(QtGui.QListWidget):
 
     def startDrag(self, supportedActions):
         """Initiate drag with selected toolbits serialized as mime data if drag is enabled."""
-        Path.Log.debug("startDrag: Drag initiated.")
+        logger.debug("startDrag: Drag initiated.")
         selected_items = self.selectedItems()
         if not selected_items:
-            Path.Log.debug("startDrag: No items selected for drag.")
+            logger.debug("startDrag: No items selected for drag.")
             return
 
         uris = [item.data(ToolBitUriRole) for item in selected_items]
         if not uris:
-            Path.Log.debug("startDrag: No valid URIs found for selected items.")
+            logger.debug("startDrag: No valid URIs found for selected items.")
             return
 
         # Create clipboard data
@@ -80,7 +83,7 @@ class ToolBitListWidget(QtGui.QListWidget):
         drag = QDrag(self)
         drag.setMimeData(mime_data)
         drag.exec_(QtCore.Qt.CopyAction | QtCore.Qt.MoveAction)
-        Path.Log.debug("startDrag: Drag executed.")
+        logger.debug("startDrag: Drag executed.")
 
     def _create_toolbit_item(self, toolbit: ToolBit, tool_no: int | None = None):
         """

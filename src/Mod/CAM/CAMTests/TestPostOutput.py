@@ -37,8 +37,7 @@ import unittest
 
 from .FilePathTestUtils import assertFilePathsEqual
 
-PathCommand.LOG_MODULE = Path.Log.thisModule()
-Path.Log.setLevel(Path.Log.Level.INFO, PathCommand.LOG_MODULE)
+logger = Path.Log.getModuleLogger(withLevel=Path.Log.Level.INFO)
 
 
 class TestFileNameGenerator(unittest.TestCase):
@@ -162,7 +161,7 @@ class TestFileNameGenerator(unittest.TestCase):
         generator = PostUtils.FilenameGenerator(job=self.job)
         filename_generator = generator.generate_filenames()
         filename = next(filename_generator)
-        Path.Log.debug(filename)
+        logger.debug(filename)
         assertFilePathsEqual(
             self, filename, os.path.join(self.testfilepath, f"{self.testfilename}.nc")
         )

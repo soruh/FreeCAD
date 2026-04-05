@@ -30,11 +30,7 @@ import Path.Dressup.Boundary as PathDressupPathBoundary
 import Path.Dressup.Utils as PathDressup
 import PathGui
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 translate = FreeCAD.Qt.translate
@@ -116,7 +112,7 @@ class TaskPanel(object):
         import Path.Main.Stock as PathStock
 
         def setupFromBaseEdit():
-            Path.Log.track(index, force)
+            logger.track(index, force)
             if force or not self.stockFromBase:
                 self.stockFromBase = PathJobGui.StockFromBaseBoundBoxEdit(
                     self.obj, self.form, force
@@ -124,13 +120,13 @@ class TaskPanel(object):
             self.stockEdit = self.stockFromBase
 
         def setupCreateBoxEdit():
-            Path.Log.track(index, force)
+            logger.track(index, force)
             if force or not self.stockCreateBox:
                 self.stockCreateBox = PathJobGui.StockCreateBoxEdit(self.obj, self.form, force)
             self.stockEdit = self.stockCreateBox
 
         def setupCreateCylinderEdit():
-            Path.Log.track(index, force)
+            logger.track(index, force)
             if force or not self.stockCreateCylinder:
                 self.stockCreateCylinder = PathJobGui.StockCreateCylinderEdit(
                     self.obj, self.form, force
@@ -138,7 +134,7 @@ class TaskPanel(object):
             self.stockEdit = self.stockCreateCylinder
 
         def setupFromExisting():
-            Path.Log.track(index, force)
+            logger.track(index, force)
             if force or not self.stockFromExisting:
                 self.stockFromExisting = PathJobGui.StockFromExistingEdit(
                     self.obj, self.form, force
@@ -158,7 +154,7 @@ class TaskPanel(object):
             elif PathJobGui.StockFromExistingEdit.IsStock(self.obj):
                 setupFromExisting()
             else:
-                Path.Log.error(
+                logger.error(
                     translate("PathJob", "Unsupported stock object %s") % self.obj.Stock.Label
                 )
         else:
@@ -173,7 +169,7 @@ class TaskPanel(object):
                     setupFromBaseEdit()
                     index = -1
             else:
-                Path.Log.error(
+                logger.error(
                     translate("PathJob", "Unsupported stock type %s (%d)")
                     % (self.form.stock.currentText(), index)
                 )
@@ -301,4 +297,4 @@ if FreeCAD.GuiUp:
     # register the FreeCAD command
     FreeCADGui.addCommand("CAM_DressupPathBoundary", CommandPathDressupPathBoundary())
 
-Path.Log.notice("Loading PathDressupPathBoundaryGui... done\n")
+logger.notice("Loading PathDressupPathBoundaryGui... done\n")

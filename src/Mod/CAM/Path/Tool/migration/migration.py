@@ -38,11 +38,7 @@ from ..library.serializers import all_serializers as library_serializers
 from ..library.models import Library
 
 # Logging setup - same pattern as Job.py
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.ERROR, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.ERROR, False)
 
 if FreeCAD.GuiUp:
     import FreeCADGui
@@ -75,27 +71,27 @@ class CAMAssetMigrator:
         location outside the default user data directory and if migration has
         not been offered for the current FreeCAD version.
         """
-        Path.Log.debug("Starting CAM asset migration check")
+        logger.debug("Starting CAM asset migration check")
 
         try:
             # Get current directories
             user_app_data_dir = FreeCAD.getUserAppDataDir()
             user_app_data_path = pathlib.Path(user_app_data_dir)
-            Path.Log.debug(f"User app data directory: {user_app_data_dir}")
+            logger.debug(f"User app data directory: {user_app_data_dir}")
 
             # Get the current CAM asset path (may be naked or versioned)
             current_asset_path = Path.Preferences.getAssetPath()
             current_asset_pathlib = pathlib.Path(current_asset_path)
-            Path.Log.debug(f"Current CAM asset path: {current_asset_path}")
+            logger.debug(f"Current CAM asset path: {current_asset_path}")
 
             # Only migrate if CamAssets is outside the standard user data directory
             if current_asset_pathlib.is_relative_to(user_app_data_path):
-                Path.Log.debug("CamAssets is in default location, no custom migration needed")
+                logger.debug("CamAssets is in default location, no custom migration needed")
                 return
 
             # Check if migration has already been offered for this version
             if self.has_migration_been_offered():
-                Path.Log.debug("Migration has already been offered for this version, skipping")
+                logger.debug("Migration has already been offered for this version, skipping")
                 return
 
             # Determine the base path (naked path without version)
@@ -104,19 +100,19 @@ class CAMAssetMigrator:
                 if FreeCAD.ApplicationDirectories.usingCurrentVersionConfig(
                     str(current_asset_path)
                 ):
-                    Path.Log.debug("Already using current version, no migration needed")
+                    logger.debug("Already using current version, no migration needed")
                     return
 
-            Path.Log.info("Asset relocation is needed and should be offered")
+            logger.info("Asset relocation is needed and should be offered")
             if self._offer_asset_relocation():
                 self._migrate_assets(str(current_asset_path))
             return
 
         except Exception as e:
-            Path.Log.error(f"Error checking CAM asset migration: {e}")
+            logger.error(f"Error checking CAM asset migration: {e}")
             import traceback
 
-            Path.Log.info(f"Full traceback: {traceback.format_exc()}")
+            logger.info(f"Full traceback: {traceback.format_exc()}")
             return
 
     def check_tool_library_workdir(self):
@@ -124,7 +120,7 @@ class CAMAssetMigrator:
         migrated_str = "Migrated" + workdir_str
         workdir = Path.Preferences.preferences().GetString(workdir_str)
         migrated_dir = Path.Preferences.preferences().GetString(migrated_str)
-        Path.Log.debug(f"workdir: {workdir}, migrated: {migrated_dir}")
+        logger.debug(f"workdir: {workdir}, migrated: {migrated_dir}")
         if workdir and not migrated_dir:
             # Look for tool libraries to import
             if os.path.isdir(workdir):
@@ -132,9 +128,9 @@ class CAMAssetMigrator:
                 libraries.sort()
                 if len(libraries):
                     # Migrate libraries, automatically and silently
-                    Path.Log.info("Migrating tool libraries into CAM assets")
+                    logger.info("Migrating tool libraries into CAM assets")
                     for library in libraries:
-                        Path.Log.info("Migrating " + library)
+                        logger.info("Migrating " + library)
                         import_dialog = AssetOpenDialog(
                             cam_assets,
                             asset_class=Library,
@@ -163,10 +159,10 @@ class CAMAssetMigrator:
         # Get current asset path for display
         current_asset_path = Path.Preferences.getAssetPath()
 
-        Path.Log.debug(f"Offering asset relocation to user for version {current_version}")
+        logger.debug(f"Offering asset relocation to user for version {current_version}")
 
         if not FreeCAD.GuiUp:
-            Path.Log.debug("GUI not available, skipping migration offer")
+            logger.debug("GUI not available, skipping migration offer")
             return False
 
         msg = (
@@ -177,7 +173,7 @@ class CAMAssetMigrator:
             "This will copy your assets to a new directory."
         )
 
-        Path.Log.debug("Showing asset relocation dialog to user")
+        logger.debug("Showing asset relocation dialog to user")
 
         reply = QMessageBox.question(
             None, "CAM Asset Migration", msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
@@ -189,13 +185,13 @@ class CAMAssetMigrator:
         known_versions = set(offered_versions.split(",")) if offered_versions else set()
         known_versions.add(current_version)
         pref_group.SetString("OfferedToMigrateCAMAssets", ",".join(known_versions))
-        Path.Log.debug(f"Updated offered versions: {known_versions}")
+        logger.debug(f"Updated offered versions: {known_versions}")
 
         if reply == QMessageBox.Yes:
-            Path.Log.info("User accepted migration, starting asset migration")
+            logger.info("User accepted migration, starting asset migration")
             return True
         else:
-            Path.Log.info("User declined migration")
+            logger.info("User declined migration")
             return False
 
     def _migrate_assets(self, source_path):
@@ -205,11 +201,11 @@ class CAMAssetMigrator:
         Args:
             source_path: Current CAM asset directory path
         """
-        Path.Log.info(f"Starting asset migration from {source_path}")
+        logger.info(f"Starting asset migration from {source_path}")
 
         try:
             FreeCAD.ApplicationDirectories.migrateAllPaths([source_path])
-            Path.Log.info(
+            logger.info(
                 "Migration complete - preferences will be handled automatically by the system"
             )
 
@@ -223,10 +219,10 @@ class CAMAssetMigrator:
 
         except Exception as e:
             error_msg = f"Failed to migrate CAM assets: {e}"
-            Path.Log.error(error_msg)
+            logger.error(error_msg)
             import traceback
 
-            Path.Log.debug(f"Migration error traceback: {traceback.format_exc()}")
+            logger.debug(f"Migration error traceback: {traceback.format_exc()}")
             if FreeCAD.GuiUp:
                 QMessageBox.critical(None, "Migration Failed", error_msg)
 

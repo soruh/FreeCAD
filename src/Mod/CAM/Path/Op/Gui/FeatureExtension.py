@@ -43,11 +43,7 @@ __doc__ = "Extensions feature page controller."
 
 translate = FreeCAD.Qt.translate
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class _Extension(object):
@@ -229,7 +225,7 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
         try:
             self.obj.ViewObject.RootNode.removeChild(self.switch)
         except (ReferenceError, RuntimeError) as e:
-            Path.Log.debug("obj already destroyed - no cleanup required")
+            logger.debug("obj already destroyed - no cleanup required")
 
     def getForm(self):
         form = FreeCADGui.PySideUic.loadUi(":/panels/PageOpPocketExtEdit.ui")
@@ -246,7 +242,7 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
                     cb(item, ext)
 
     def currentExtensions(self):
-        Path.Log.debug("currentExtensions()")
+        logger.debug("currentExtensions()")
         extensions = []
 
         def extractExtension(item, ext):
@@ -255,16 +251,16 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
 
         if self.form.enableExtensions.isChecked():
             self.forAllItemsCall(extractExtension)
-        Path.Log.track("extensions", extensions)
+        logger.track("extensions", extensions)
         return extensions
 
     def updateProxyExtensions(self, obj):
-        Path.Log.debug("updateProxyExtensions()")
+        logger.debug("updateProxyExtensions()")
         self.extensions = self.currentExtensions()
         FeatureExtensions.setExtensions(obj, self.extensions)
 
     def getFields(self, obj):
-        Path.Log.track(obj.Label, self.model.rowCount(), self.model.columnCount())
+        logger.track(obj.Label, self.model.rowCount(), self.model.columnCount())
         self.blockUpdateData = True
 
         if obj.ExtensionCorners != self.form.extendCorners.isChecked():
@@ -275,8 +271,8 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
         self.blockUpdateData = False
 
     def setFields(self, obj):
-        Path.Log.track(obj.Label)
-        # Path.Log.debug("setFields()")
+        logger.track(obj.Label)
+        # logger.debug("setFields()")
 
         if obj.ExtensionCorners != self.form.extendCorners.isChecked():
             self.form.extendCorners.toggle()
@@ -312,8 +308,8 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
             self._enableExtensions()  # Recalculate extensions
 
     def createItemForBaseModel(self, base, sub, edges, extensions):
-        Path.Log.track(base.Label, sub, "+", len(edges), len(base.Shape.getElement(sub).Edges))
-        # Path.Log.debug("createItemForBaseModel() label: {}, sub: {}, {}, edgeCnt: {}, subEdges: {}".format(base.Label, sub, '+', len(edges), len(base.Shape.getElement(sub).Edges)))
+        logger.track(base.Label, sub, "+", len(edges), len(base.Shape.getElement(sub).Edges))
+        # logger.debug("createItemForBaseModel() label: {}, sub: {}, {}, edgeCnt: {}, subEdges: {}".format(base.Label, sub, '+', len(edges), len(base.Shape.getElement(sub).Edges)))
 
         extendCorners = self.form.extendCorners.isChecked()
         subShape = base.Shape.getElement(sub)
@@ -366,7 +362,7 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
                     return Path.Geom.edgesMatch(e0, e1)
 
             self.extensionEdges = extensionEdges
-            Path.Log.debug("extensionEdges.values(): {}".format(extensionEdges.values()))
+            logger.debug("extensionEdges.values(): {}".format(extensionEdges.values()))
             for edgeList in Part.sortEdges(
                 list(extensionEdges)
             ):  # Identify connected edges that form wires
@@ -398,11 +394,11 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
         return item
 
     def setExtensions(self, extensions):
-        Path.Log.track(len(extensions))
-        Path.Log.debug("setExtensions()")
+        logger.track(len(extensions))
+        logger.debug("setExtensions()")
 
         if self.extensionsReady:
-            Path.Log.debug("setExtensions() returning per `extensionsReady` flag")
+            logger.debug("setExtensions() returning per `extensionsReady` flag")
             return
 
         self.form.extensionTree.blockSignals(True)
@@ -475,11 +471,11 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
 
         self.form.extensionTree.blockSignals(False)
         self.extensionsReady = True
-        Path.Log.debug("  setExtensions() finished and setting `extensionsReady=True`")
+        logger.debug("  setExtensions() finished and setting `extensionsReady=True`")
 
     def updateData(self, obj, prop):
-        Path.Log.track(obj.Label, prop, self.blockUpdateData)
-        # Path.Log.debug("updateData({})".format(prop))
+        logger.track(obj.Label, prop, self.blockUpdateData)
+        # logger.debug("updateData({})".format(prop))
 
         if not self.blockUpdateData:
             if self.fieldsSet:
@@ -496,10 +492,10 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
                     self.extensionsReady = False
 
     def restoreSelection(self, selection):
-        Path.Log.debug("restoreSelection()")
-        Path.Log.track()
+        logger.debug("restoreSelection()")
+        logger.track()
         if 0 == self.model.rowCount():
-            Path.Log.track("-")
+            logger.track("-")
             self.form.buttonClear.setEnabled(False)
             self.form.buttonDisable.setEnabled(False)
             self.form.buttonEnable.setEnabled(False)
@@ -540,11 +536,11 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
             self.forAllItemsCall(setSelectionVisuals)
 
     def selectionChanged(self):
-        Path.Log.debug("selectionChanged()")
+        logger.debug("selectionChanged()")
         self.restoreSelection([])
 
     def extensionsClear(self):
-        Path.Log.debug("extensionsClear()")
+        logger.debug("extensionsClear()")
 
         def disableItem(item, ext):
             item.setCheckState(QtCore.Qt.Unchecked)
@@ -554,8 +550,8 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
         self.setDirty()
 
     def _extensionsSetState(self, state):
-        Path.Log.debug("_extensionsSetState()")
-        Path.Log.track(state)
+        logger.debug("_extensionsSetState()")
+        logger.track(state)
         for index in self.selectionModel.selectedIndexes():
             item = self.model.itemFromIndex(index)
             ext = item.data(self.DataObject)
@@ -571,7 +567,7 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
         self._extensionsSetState(QtCore.Qt.Checked)
 
     def updateItemEnabled(self, item):
-        Path.Log.track(item)
+        logger.track(item)
         ext = item.data(self.DataObject)
         if item.checkState() == QtCore.Qt.Checked:
             ext.enable()
@@ -597,8 +593,8 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
         # self.setDirty()
 
     def toggleExtensionCorners(self):
-        Path.Log.debug("toggleExtensionCorners()")
-        Path.Log.track()
+        logger.debug("toggleExtensionCorners()")
+        logger.track()
         self.extensionsReady = False
         extensions = FeatureExtensions.getExtensions(self.obj)
         self.setExtensions(extensions)
@@ -606,7 +602,7 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
         self.setDirty()
 
     def getSignalsForUpdate(self, obj):
-        Path.Log.track(obj.Label)
+        logger.track(obj.Label)
         signals = []
         signals.append(self.form.defaultLength.editingFinished)
         signals.append(self.form.enableExtensions.toggled)
@@ -643,7 +639,7 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
                 for page in parent.featurePages:
                     if hasattr(page, "panelTitle"):
                         if page.panelTitle == "Operation" and hasattr(page.form, "useOutline"):
-                            Path.Log.debug("Found useOutline checkbox")
+                            logger.debug("Found useOutline checkbox")
                             self.useOutlineCheckbox = page.form.useOutline
                             if page.form.useOutline.isChecked():
                                 self.useOutline = 1
@@ -671,7 +667,7 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
         if self.form.enableExtensions.isChecked():
             enabled = True
 
-        Path.Log.debug("_autoEnableExtensions() is {}".format(enabled))
+        logger.debug("_autoEnableExtensions() is {}".format(enabled))
         self.enabled = enabled
 
     def _enableExtensions(self):
@@ -680,7 +676,7 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
         This method manages the enabled or disabled state of the extensionsEdit
         Task Panel input group.
         """
-        Path.Log.debug("_enableExtensions()")
+        logger.debug("_enableExtensions()")
 
         if self.form.enableExtensions.isChecked():
             self.enabled = True
@@ -698,7 +694,7 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
         This method manages the state of the button and the message thereof.
         """
         self._getUseOutlineState()  # Find `useOutline` checkbox and get its boolean value
-        Path.Log.debug("_includeEdgesAndWires()")
+        logger.debug("_includeEdgesAndWires()")
         self.extensionsReady = False
         self._enableExtensions()
 
@@ -714,16 +710,16 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
             cacheLabel = base.Name + "_" + sub + "_None"
 
         if cacheLabel in self.extensionsCache:
-            # Path.Log.debug("return _cachedExtension({})".format(cacheLabel))
+            # logger.debug("return _cachedExtension({})".format(cacheLabel))
             return self.extensionsCache[cacheLabel]
         else:
-            # Path.Log.debug("_cachedExtension({}) created".format(cacheLabel))
+            # logger.debug("_cachedExtension({}) created".format(cacheLabel))
             _ext = _Extension(obj, base, sub, label)
             self.extensionsCache[cacheLabel] = _ext  # cache the extension
             return _ext
 
     def _resetCachedExtensions(self):
-        Path.Log.debug("_resetCachedExtensions()")
+        logger.debug("_resetCachedExtensions()")
         reset = dict()
         self.extensionsCache = reset
         self.extensionsReady = False

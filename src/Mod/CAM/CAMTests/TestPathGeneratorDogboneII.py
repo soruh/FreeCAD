@@ -28,11 +28,12 @@ import Path.Base.Language as PathLanguage
 import CAMTests.PathTestUtils as PathTestUtils
 import math
 
-# Path.Log.setLevel(Path.Log.Level.DEBUG)
-Path.Log.setLevel(Path.Log.Level.NOTICE)
-
 PI = math.pi
-DebugMode = Path.Log.getLevel(Path.Log.thisModule()) == Path.Log.Level.DEBUG
+DebugMode = False
+
+logger = Path.Log.getModuleLogger(
+    withLevel=Path.Log.Level.DEBUG if DebugMode else Path.Log.Level.NOTICE
+)
 
 
 def createKinks(maneuver):
@@ -95,7 +96,7 @@ class TestGeneratorDogboneII(PathTestUtils.PathTestBase):
             FreeCAD.ActiveDocument.Objects[-1].Visibility = False
             Path.show(dogboneII.bone_to_path(bone))
             FreeCAD.ActiveDocument.Objects[-1].Visibility = False
-        Path.Log.debug(f"{bone.kink} : {bone.angle / PI:.2f}")
+        logger.debug(f"{bone.kink} : {bone.angle / PI:.2f}")
 
         b = [i.str(digits) for i in bone.instr]
         self.assertEqual(f"[{', '.join(b)}]", s)

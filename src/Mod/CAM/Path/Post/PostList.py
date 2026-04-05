@@ -26,11 +26,7 @@ import Path
 import Path.Base.Util as PathUtil
 
 debug = False
-if debug:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, debug)
 
 
 def _get_effective_fixtures(processor):
@@ -236,7 +232,7 @@ def build_postlist_by_fixture(processor: Any) -> list:
     Returns:
         List of tuples: [(fixture_name, [postable_items])]
     """
-    Path.Log.debug("Ordering by Fixture")
+    logger.debug("Ordering by Fixture")
     postlist = []
     wcslist = _get_effective_fixtures(processor)
     currTc = None
@@ -255,7 +251,7 @@ def build_postlist_by_fixture(processor: Any) -> list:
             if tc_postable is not None:
                 if needsTcOp(currTc, tc_postable):
                     sublist.append(tc_postable)
-                    Path.Log.debug(f"Appending TC: {tc_postable.label}")
+                    logger.debug(f"Appending TC: {tc_postable.label}")
                     currTc = tc_postable
             sublist.append(wrapped_op)
 
@@ -276,7 +272,7 @@ def build_postlist_by_tool(processor: Any) -> list:
     Returns:
         List of tuples: [(tool_name, [postable_items])]
     """
-    Path.Log.debug("Ordering by Tool")
+    logger.debug("Ordering by Tool")
     postlist = []
     wcslist = _get_effective_fixtures(processor)
     toolstring = "None"
@@ -296,12 +292,12 @@ def build_postlist_by_tool(processor: Any) -> list:
                 sublist.extend(curlist)
             postlist.append((toolstring, sublist))
 
-    Path.Log.track(processor._job.PostProcessorOutputFile)
+    logger.track(processor._job.PostProcessorOutputFile)
     for _, obj in enumerate(processor._operations):
-        Path.Log.track(obj.Label)
+        logger.track(obj.Label)
 
         if not PathUtil.activeForOp(obj):
-            Path.Log.track()
+            logger.track()
             continue
 
         # Wrap early: all further access uses the Postable copy, not the raw document object.
@@ -339,7 +335,7 @@ def build_postlist_by_operation(processor: Any) -> list:
     Returns:
         List of tuples: [(operation_name, [postable_items])]
     """
-    Path.Log.debug("Ordering by Operation")
+    logger.debug("Ordering by Operation")
     postlist = []
     wcslist = _get_effective_fixtures(processor)
     currTc = None
@@ -350,7 +346,7 @@ def build_postlist_by_operation(processor: Any) -> list:
 
         # Wrap early: all further access uses the Postable copy, not the raw document object.
         wrapped_op = _wrap_op(obj)
-        Path.Log.debug(f"obj: {wrapped_op.label}")
+        logger.debug(f"obj: {wrapped_op.label}")
 
         sublist = []
 
@@ -383,7 +379,7 @@ def buildPostList(processor: Any) -> List[Tuple[str, List]]:
         List of tuples: [(section_name, [postable_items])]
     """
     orderby = processor._job.OrderOutputBy
-    Path.Log.debug(f"Ordering by {orderby}")
+    logger.debug(f"Ordering by {orderby}")
 
     if orderby == "Fixture":
         postlist = build_postlist_by_fixture(processor)
@@ -394,7 +390,7 @@ def buildPostList(processor: Any) -> List[Tuple[str, List]]:
     else:
         raise ValueError(f"Unknown order: {orderby}")
 
-    Path.Log.debug(f"Postlist: {postlist}")
+    logger.debug(f"Postlist: {postlist}")
 
     if processor._job.SplitOutput:
         final_postlist = postlist

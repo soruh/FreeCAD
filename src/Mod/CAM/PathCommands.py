@@ -47,6 +47,8 @@ __title__ = "FreeCAD Path Commands"
 __author__ = "sliptonic"
 __url__ = "https://www.freecad.org"
 
+logger = Path.Log.getModuleLogger()
+
 
 class _CommandSelectLoop:
     "the Path command to complete loop selection definition"
@@ -89,7 +91,7 @@ class _CommandSelectLoop:
                 self.active = False
             return self.active
         except Exception as exc:
-            Path.Log.error(exc)
+            logger.error(exc)
             traceback.print_exc(exc)
             return False
 
@@ -143,7 +145,7 @@ class _CommandSelectLoop:
                         FreeCADGui.Selection.addSelection(obj, f"Edge{objEdges.index(eo) + 1}")
             return
 
-        Path.Log.warning(translate("CAM_SelectLoop", "Closed loop detection failed."))
+        logger.warning(translate("CAM_SelectLoop", "Closed loop detection failed."))
 
     def formsPartOfALoop(self, obj, sub, names):
         try:

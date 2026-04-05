@@ -26,16 +26,10 @@ import Path
 import FreeCAD
 import math
 
-Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
-
 translate = FreeCAD.Qt.translate
 
 debug = False
-if debug:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, debug)
 
 # Define colors for the layers
 LAYER_COLORS = {"CUT": "red", "ENGRAVE": "blue", "FILL": "green", "DEFAULT": "black"}
@@ -50,15 +44,15 @@ class Svg(PostProcessor):
             tooltipargs=[],
             units="mm",
         )
-        Path.Log.debug("SVG post processor initialized")
+        logger.debug("SVG post processor initialized")
 
     def export(self):
-        Path.Log.debug("Exporting the job")
+        logger.debug("Exporting the job")
 
         use_layers = "--layers" in self._job.PostProcessorArgs
 
         postables = self._buildPostList()
-        Path.Log.debug(f"postables count: {len(postables)}")
+        logger.debug(f"postables count: {len(postables)}")
 
         svg_strings = []
         for idx, section in enumerate(postables):
@@ -68,14 +62,14 @@ class Svg(PostProcessor):
         return svg_strings
 
     def create_svg_section(self, section, idx, use_layers):
-        Path.Log.track()
+        logger.track()
         partname, sublist = section
 
         # Initialize bounding box
         xmin, ymin, xmax, ymax = self.calculate_bounding_box(sublist)
 
         if xmin is None or ymin is None or xmax is None or ymax is None:
-            Path.Log.debug("No wires found, skipping section")
+            logger.debug("No wires found, skipping section")
             return ""
 
         width = xmax - xmin
@@ -95,7 +89,7 @@ class Svg(PostProcessor):
             color = strokestyle["color"]
             width = strokestyle["width"]
             pathtype = strokestyle["label"]
-            Path.Log.debug(pathtype)
+            logger.debug(pathtype)
 
             wires = Path.Geom.wiresForPath(obj.Path)
             if not wires:
@@ -134,15 +128,15 @@ class Svg(PostProcessor):
         for edge in wire.Edges:
             start_point = edge.Vertexes[0].Point
             end_point = edge.Vertexes[-1].Point
-            Path.Log.debug(f"Edge Type: {edge.Curve.TypeId}")
-            Path.Log.debug(
+            logger.debug(f"Edge Type: {edge.Curve.TypeId}")
+            logger.debug(
                 f"Start Point: ({format_coord(start_point.x)}, {format_coord(start_point.y)})"
             )
-            Path.Log.debug(f"End Point: ({format_coord(end_point.x)}, {format_coord(end_point.y)})")
+            logger.debug(f"End Point: ({format_coord(end_point.x)}, {format_coord(end_point.y)})")
 
             # Check if the edge is vertical (should be skipped)
             if start_point.x == end_point.x and start_point.y == end_point.y:
-                Path.Log.debug("Skipping vertical edge")
+                logger.debug("Skipping vertical edge")
                 continue
 
             if is_first_point:
@@ -158,7 +152,7 @@ class Svg(PostProcessor):
                 vertices_info.append(
                     f"L {format_coord(end_point.x - xmin)} {format_coord(height - (end_point.y - ymin))}"
                 )
-                Path.Log.debug(
+                logger.debug(
                     f"Line segment from ({format_coord(start_point.x)}, {format_coord(start_point.y)}) to ({format_coord(end_point.x)}, {format_coord(end_point.y)})"
                 )
             elif edge.Curve.TypeId in ["Part::GeomCircle", "Part::GeomArcOfCircle"]:
@@ -173,7 +167,7 @@ class Svg(PostProcessor):
                 if angle_diff > math.pi:
                     angle_diff -= 2 * math.pi
 
-                Path.Log.debug(f"Angle difference: {angle_diff:.2f} radians")
+                logger.debug(f"Angle difference: {angle_diff:.2f} radians")
 
                 # Determine the large_arc_flag and sweep_flag
                 large_arc_flag = 1 if abs(angle_diff) > (math.pi) else 0
@@ -188,10 +182,10 @@ class Svg(PostProcessor):
                 vertices_info.append(
                     f"A {format_coord(radius)} {format_coord(radius)} 0 {large_arc_flag} {sweep_flag} {end_x} {end_y}"
                 )
-                Path.Log.debug(
+                logger.debug(
                     f"Circular arc with radius {format_coord(radius)} from ({start_x}, {start_y}) to ({end_x}, {end_y}) (large_arc_flag: {large_arc_flag}, sweep_flag: {sweep_flag})"
                 )
-                Path.Log.debug(path_data)
+                logger.debug(path_data)
             else:
                 # Discretize other types of edges into 100 segments
                 vertices = edge.discretize(100)
@@ -204,12 +198,12 @@ class Svg(PostProcessor):
                     vertices_info.append(
                         f"L {format_coord(vertex.x - xmin)} {format_coord(height - (vertex.y - ymin))}"
                     )
-                Path.Log.debug(f"Discretized edge with {len(vertices)} points")
+                logger.debug(f"Discretized edge with {len(vertices)} points")
 
         path_data += "Z "  # Close the path for filled edges
         vertices_info.append("Z")
-        Path.Log.debug(f"SVG Path: {path_data.strip()}")
-        Path.Log.debug(f"Vertices Info: {vertices_info}")
+        logger.debug(f"SVG Path: {path_data.strip()}")
+        logger.debug(f"Vertices Info: {vertices_info}")
         return path_data.strip()
 
     def calculate_bounding_box(self, sublist):

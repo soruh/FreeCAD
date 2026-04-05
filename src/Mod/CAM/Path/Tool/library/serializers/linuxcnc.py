@@ -29,6 +29,8 @@ from ...toolbit import ToolBit
 from ...toolbit.mixins import RotaryToolBitMixin
 from ..models.library import Library
 
+logger = Path.Log.getModuleLogger()
+
 
 class LinuxCNCSerializer(AssetSerializer):
     for_class: Type[Asset] = Library
@@ -53,7 +55,7 @@ class LinuxCNCSerializer(AssetSerializer):
         for bit_no, bit in sorted(asset._bit_nos.items()):
             # Connor: assert isinstance(bit, ToolBit)
             # if not isinstance(bit, RotaryToolBitMixin):
-            #     Path.Log.warning(
+            #     logger.warning(
             #         f"Skipping too {bit.label} (bit.id) because it is not a rotary tool"
             #     )
             #     continue

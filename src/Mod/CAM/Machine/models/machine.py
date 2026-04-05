@@ -28,11 +28,7 @@ from typing import Dict, Any, List, Optional, Tuple, Callable
 from collections import namedtuple
 from enum import Enum
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 # Reference axis vectors
@@ -222,13 +218,13 @@ class LinearAxis:
 
         # Validate limits
         if self.min_limit >= self.max_limit:
-            Path.Log.warning(
+            logger.warning(
                 f"LinearAxis {self.name}: min_limit ({self.min_limit}) >= max_limit ({self.max_limit})"
             )
 
         # Validate velocity
         if self.max_velocity <= 0:
-            Path.Log.warning(
+            logger.warning(
                 f"LinearAxis {self.name}: max_velocity must be positive, got {self.max_velocity}"
             )
 
@@ -300,13 +296,13 @@ class RotaryAxis:
 
         # Validate limits
         if self.min_limit >= self.max_limit:
-            Path.Log.warning(
+            logger.warning(
                 f"RotaryAxis {self.name}: min_limit ({self.min_limit}) >= max_limit ({self.max_limit})"
             )
 
         # Validate velocity
         if self.max_velocity <= 0:
-            Path.Log.warning(
+            logger.warning(
                 f"RotaryAxis {self.name}: max_velocity must be positive, got {self.max_velocity}"
             )
 
@@ -841,10 +837,10 @@ class Machine:
         try:
             with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=4, ensure_ascii=False)
-            Path.Log.debug(f"Saved machine configuration to {filepath}")
+            logger.debug(f"Saved machine configuration to {filepath}")
             return filepath
         except Exception as e:
-            Path.Log.error(f"Failed to save configuration: {e}")
+            logger.error(f"Failed to save configuration: {e}")
             raise Exception(f"Failed to save machine file {filepath}: {e}")
 
     def set_alignment_axes(self, primary, secondary=None):
@@ -1301,7 +1297,7 @@ class Machine:
                         # Both vectors are zero, use defaults
                         axis_vector = [1, 0, 0]  # Default X-axis
                         joint_origin = [0, 0, 0]
-                        Path.Log.warning(
+                        logger.warning(
                             f"Invalid joint data for linear axis {axis_name}, using defaults"
                         )
                 else:
@@ -1313,14 +1309,14 @@ class Machine:
                         # Fallback - assume joint[0] is rotation vector
                         axis_vector = [vec0.x, vec0.y, vec0.z]
                         joint_origin = [0, 0, 0]
-                        Path.Log.warning(
+                        logger.warning(
                             f"Invalid joint data for rotary axis {axis_name}, using defaults"
                         )
             else:
                 # Malformed joint data - use defaults
                 joint_origin = [0, 0, 0]
                 axis_vector = [1, 0, 0] if axis_type == "linear" else [0, 0, 1]
-                Path.Log.warning(f"Malformed joint data for axis {axis_name}, using defaults")
+                logger.warning(f"Malformed joint data for axis {axis_name}, using defaults")
 
             if axis_type == "linear":
                 # Create linear axis with parsed joint data
@@ -1628,7 +1624,7 @@ class MachineFactory:
             try:
                 callback(event_type, machine_name)
             except Exception as e:
-                Path.Log.error(f"Error in machine factory callback: {e}")
+                logger.error(f"Error in machine factory callback: {e}")
 
     @classmethod
     def get_config_directory(cls):
@@ -1639,7 +1635,7 @@ class MachineFactory:
                 cls._config_dir = Path.Preferences.getAssetPath() / "Machines"
                 cls._config_dir.mkdir(parents=True, exist_ok=True)
             except Exception as e:
-                Path.Log.warning(f"Could not create default config directory: {e}")
+                logger.warning(f"Could not create default config directory: {e}")
                 cls._config_dir = pathlib.Path.cwd() / "Machines"
                 cls._config_dir.mkdir(parents=True, exist_ok=True)
         return cls._config_dir
@@ -1667,10 +1663,10 @@ class MachineFactory:
             data = config.to_dict()
             with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(data, f, sort_keys=True, indent=4)
-            Path.Log.debug(f"Saved machine file: {filepath}")
+            logger.debug(f"Saved machine file: {filepath}")
             return filepath
         except Exception as e:
-            Path.Log.error(f"Failed to save configuration: {e}")
+            logger.error(f"Failed to save configuration: {e}")
             raise Exception(f"Failed to save machine file {filepath}: {e}")
 
     @classmethod
@@ -1699,9 +1695,9 @@ class MachineFactory:
         try:
             with open(filepath, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            Path.Log.debug(f"Loaded machine file: {filepath}")
+            logger.debug(f"Loaded machine file: {filepath}")
             machine = Machine.from_dict(data)
-            Path.Log.debug(f"Loaded machine configuration from {filepath}")
+            logger.debug(f"Loaded machine configuration from {filepath}")
             return machine
 
         except FileNotFoundError:
@@ -1744,7 +1740,7 @@ class MachineFactory:
                     display_name = machine_file.stem.replace("_", " ")
                     templates.append((display_name, str(machine_file)))
         except Exception as e:
-            Path.Log.warning(f"Could not load built-in machine templates: {e}")
+            logger.warning(f"Could not load built-in machine templates: {e}")
 
         return templates
 
@@ -1908,13 +1904,13 @@ class MachineFactory:
         try:
             if filepath.exists():
                 filepath.unlink()
-                Path.Log.debug(f"Deleted machine: {filepath}")
+                logger.debug(f"Deleted machine: {filepath}")
                 return True
             else:
-                Path.Log.warning(f"Machine file not found: {filepath}")
+                logger.warning(f"Machine file not found: {filepath}")
                 return False
         except Exception as e:
-            Path.Log.error(f"Failed to delete machine: {e}")
+            logger.error(f"Failed to delete machine: {e}")
             return False
 
     @classmethod
@@ -1939,7 +1935,7 @@ class MachineFactory:
                 filepath = cls.save_configuration(config, f"{name}.fcm")
                 saved_paths[name] = filepath
             except Exception as e:
-                Path.Log.error(f"Failed to save {name}: {e}")
+                logger.error(f"Failed to save {name}: {e}")
 
         return saved_paths
 

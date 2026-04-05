@@ -39,11 +39,7 @@ from lazy_loader.lazy_loader import LazyLoader
 Draft = LazyLoader("Draft", globals(), "Draft")
 
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 translate = FreeCAD.Qt.translate
 
@@ -287,11 +283,11 @@ class ObjectJob:
         data = list()
         idx = 0 if dataType == "translated" else 1
 
-        Path.Log.debug(enums)
+        logger.debug(enums)
 
         for k, v in enumerate(enums):
             data.append((v, [tup[idx] for tup in enums[v]]))
-        Path.Log.debug(data)
+        logger.debug(data)
 
         return data
 
@@ -329,7 +325,7 @@ class ObjectJob:
         self.setupSheet = obj.SetupSheet.Proxy
 
     def setupBaseModel(self, obj, models=None):
-        Path.Log.track(obj.Label, models)
+        logger.track(obj.Label, models)
         addModels = False
 
         if not hasattr(obj, "Model"):
@@ -353,7 +349,7 @@ class ObjectJob:
             obj.Model.Label = "Model"
 
         if hasattr(obj, "Base"):
-            Path.Log.info("Converting Job.Base to new Job.Model for {}".format(obj.Label))
+            logger.info("Converting Job.Base to new Job.Model for {}".format(obj.Label))
             obj.Model.addObject(obj.Base)
             obj.Base = None
             obj.removeProperty("Base")
@@ -406,12 +402,12 @@ class ObjectJob:
 
     def onDelete(self, obj, arg2=None):
         """Called by the view provider, there doesn't seem to be a callback on the obj itself."""
-        Path.Log.track(obj.Label, arg2)
+        logger.track(obj.Label, arg2)
         doc = obj.Document
 
         if getattr(obj, "Operations", None):
             # the first to tear down are the ops, they depend on other resources
-            Path.Log.debug("taking down ops: %s" % [o.Name for o in self.allOperations()])
+            logger.debug("taking down ops: %s" % [o.Name for o in self.allOperations()])
             while obj.Operations.Group:
                 op = obj.Operations.Group[0]
                 if (
@@ -427,7 +423,7 @@ class ObjectJob:
 
         # stock could depend on Model, so delete it first
         if getattr(obj, "Stock", None):
-            Path.Log.debug("taking down stock")
+            logger.debug("taking down stock")
             PathUtil.clearExpressionEngine(obj.Stock)
             doc.removeObject(obj.Stock.Name)
             obj.Stock = None
@@ -435,7 +431,7 @@ class ObjectJob:
         # base doesn't depend on anything inside job
         if getattr(obj, "Model", None):
             for base in obj.Model.Group:
-                Path.Log.debug("taking down base %s" % base.Label)
+                logger.debug("taking down base %s" % base.Label)
                 self.removeBase(obj, base, False)
             obj.Model.Group = []
             doc.removeObject(obj.Model.Name)
@@ -443,7 +439,7 @@ class ObjectJob:
 
         # Tool controllers might refer to either legacy tool or toolbit
         if getattr(obj, "Tools", None):
-            Path.Log.debug("taking down tool controller")
+            logger.debug("taking down tool controller")
             for tc in obj.Tools.Group:
                 if hasattr(tc.Tool, "BitBody") and tc.Tool.BitBody:
                     tc.Tool.BitBody.removeObjectsFromDocument()
@@ -643,10 +639,10 @@ class ObjectJob:
                     if templatePost in obj.PostProcessor:
                         obj.PostProcessor = templatePost
                     else:
-                        Path.Log.warning(
+                        logger.warning(
                             f"PostProcessor '{templatePost}' from template not found in available postprocessors. Using default."
                         )
-                        Path.Log.debug(f"Available postprocessors: {obj.PostProcessor}")
+                        logger.debug(f"Available postprocessors: {obj.PostProcessor}")
                         # Keep the default postprocessor that was already set
                     if attrs.get(JobTemplate.PostProcessorArgs):
                         obj.PostProcessorArgs = attrs.get(JobTemplate.PostProcessorArgs)
@@ -669,7 +665,7 @@ class ObjectJob:
                         if ctrl:
                             tcs.append(ctrl)
                         else:
-                            Path.Log.debug(f"skipping TC {tc['name']}")
+                            logger.debug(f"skipping TC {tc['name']}")
                 if attrs.get(JobTemplate.Stock):
                     obj.Stock = PathStock.CreateFromTemplate(obj, attrs.get(JobTemplate.Stock))
 
@@ -682,11 +678,11 @@ class ObjectJob:
                 if attrs.get(JobTemplate.SplitOutput):
                     obj.SplitOutput = attrs.get(JobTemplate.SplitOutput)
 
-                Path.Log.debug("setting tool controllers (%d)" % len(tcs))
+                logger.debug("setting tool controllers (%d)" % len(tcs))
                 if tcs:
                     obj.Tools.Group = tcs
             else:
-                Path.Log.error(
+                logger.error(
                     "Unsupported PathJob template version {}".format(attrs.get(JobTemplate.Version))
                 )
 
@@ -780,7 +776,7 @@ class ObjectJob:
                     if removeBefore:
                         group.remove(before)
                 except Exception as e:
-                    Path.Log.error(e)
+                    logger.error(e)
                     group.append(op)
             else:
                 group.append(op)
@@ -805,7 +801,7 @@ class ObjectJob:
 
             return MachineFactory.get_machine(machine_name)
         except Exception as e:
-            Path.Log.error(f"Failed to load machine '{machine_name}': {e}")
+            logger.error(f"Failed to load machine '{machine_name}': {e}")
             return None
 
     def nextToolNumber(self):
@@ -818,7 +814,7 @@ class ObjectJob:
 
     def addToolController(self, tc):
         group = self.obj.Tools.Group
-        Path.Log.debug("addToolController(%s): %s" % (tc.Label, [t.Label for t in group]))
+        logger.debug("addToolController(%s): %s" % (tc.Label, [t.Label for t in group]))
         if tc.Name not in [str(t.Name) for t in group]:
             tc.setExpression(
                 "VertRapid",
@@ -872,7 +868,7 @@ class ObjectJob:
             suffix = job.Name[3:]
 
         def errorMessage(grp, job):
-            Path.Log.error("{} corrupt in {} job.".format(grp, job.Name))
+            logger.error("{} corrupt in {} job.".format(grp, job.Name))
 
         if not job.Operations:
             self.setupOperations(job)

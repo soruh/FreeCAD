@@ -30,15 +30,14 @@ import Path.Dressup.Utils as PathDressup
 import PathScripts.PathUtils as PathUtils
 import math
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(None, False)
+
 
 PI = math.pi
 
 
 def calc_length_adaptive(kink, angle, nominal_length, custom_length):
-    Path.Log.track(kink, angle, nominal_length, custom_length)
+    logger.track(kink, angle, nominal_length, custom_length)
 
     if Path.Geom.isRoughly(abs(kink.deflection()), 0):
         return 0
@@ -79,7 +78,7 @@ def calc_length_adaptive(kink, angle, nominal_length, custom_length):
     da = Path.Geom.normalizeAngle(kink.normAngle() - angle)
     depth = dist * math.cos(da)
     if depth < 0:
-        Path.Log.debug(
+        logger.debug(
             f"depth={depth:4f}: kink={kink}, angle={180*angle/PI}, dist={dist:.4f}, da={180*da/PI} -> depth=0.0"
         )
         depth = 0
@@ -87,7 +86,7 @@ def calc_length_adaptive(kink, angle, nominal_length, custom_length):
         height = dist * abs(math.sin(da))
         if height < nominal_length:
             depth = depth - math.sqrt(nominal_length * nominal_length - height * height)
-        Path.Log.debug(
+        logger.debug(
             f"{kink}: angle={180*angle/PI}, dist={dist:.4f}, da={180*da/PI}, depth={depth:.4f}"
         )
 
@@ -155,7 +154,7 @@ class Incision(object):
 def insertBone(obj, kink):
     """insertBone(kink, side) - return True if a bone should be inserted into the kink"""
     if not kink.isKink():
-        Path.Log.debug("not a kink")
+        logger.debug("not a kink")
         return False
 
     if obj.Side == Side.Right and kink.goesRight():
@@ -298,7 +297,7 @@ class Proxy(object):
         if move0.isRapid() and move1.isRapid():
             return None
         kink = dogboneII.Kink(move0, move1)
-        Path.Log.debug(f"{obj.Label}.createBone({kink})")
+        logger.debug(f"{obj.Label}.createBone({kink})")
         if insertBone(obj, kink):
             generator = Style.Generator[obj.Style]
             calc_length = Incision.Calc[obj.Incision]
@@ -416,7 +415,7 @@ class Proxy(object):
         return outerClosedProfilesIndex
 
     def execute(self, obj):
-        Path.Log.track(obj.Label)
+        logger.track(obj.Label)
         maneuver = PathLanguage.Maneuver()
         bones = []
         lastMove = None
@@ -433,7 +432,7 @@ class Proxy(object):
                 closedProfilesIndex = None
 
             for index, instr in enumerate(source):
-                # Path.Log.debug(f"instr: {instr}")
+                # logger.debug(f"instr: {instr}")
                 if instr.isMove():
                     thisMove = instr
                     bone = None
@@ -464,7 +463,7 @@ class Proxy(object):
                         ):
                             maneuver.addInstructions(bone.instr)
                         else:
-                            Path.Log.debug(f"{bone.kink} disabled {enabled}")
+                            logger.debug(f"{bone.kink} disabled {enabled}")
                         bones.append(bone)
                     maneuver.addInstruction(thisMove)
                 else:
@@ -472,7 +471,7 @@ class Proxy(object):
                     maneuver.addInstruction(instr)
 
         else:
-            Path.Log.info(f"No Path found to dress up in op {obj.Base}")
+            logger.info(f"No Path found to dress up in op {obj.Base}")
         self.maneuver = maneuver
         self.bones = bones
         self.boneTips = None

@@ -65,17 +65,13 @@ class ToolBitRecomputeObserver:
 
         # Process any queued visual updates
         if self.toolbit_proxy and hasattr(self.toolbit_proxy, "_process_queued_visual_update"):
-            Path.Log.debug("Document recompute finished, processing queued visual update")
+            logger.debug("Document recompute finished, processing queued visual update")
             self.toolbit_proxy._process_queued_visual_update()
 
 
 PropertyGroupShape = "Shape"
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.ERROR, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.ERROR, False)
 
 
 class ToolBit(Asset, ABC):
@@ -89,7 +85,7 @@ class ToolBit(Asset, ABC):
         attrs: Optional[Mapping] = None,
     ):
         super().__init__()
-        Path.Log.track("ToolBit __init__ called")
+        logger.track("ToolBit __init__ called")
         self.id = id if id is not None else str(uuid.uuid4())
         self.obj = DetachedDocumentObject()
         self.obj.Proxy = self
@@ -151,7 +147,7 @@ class ToolBit(Asset, ABC):
             # If it's a subtype, keep it as-is (already set in attrs)
 
         if not shape_class:
-            Path.Log.debug(
+            logger.debug(
                 f"Failed to find usable shape for ID '{shape_id}'"
                 f" (shape type {shape_type}). Falling back to 'Unknown'"
             )
@@ -163,7 +159,7 @@ class ToolBit(Asset, ABC):
             try:
                 tool_bit_shape = cast(ToolBitShape, cam_assets.get(shape_asset_uri))
             except FileNotFoundError:
-                Path.Log.debug(f"ToolBit.from_dict: Shape asset {shape_asset_uri} not found.")
+                logger.debug(f"ToolBit.from_dict: Shape asset {shape_asset_uri} not found.")
                 # Rely on the fallback below
             else:
                 toolbit = cls.from_shape(tool_bit_shape, attrs, id=attrs.get("id"))
@@ -174,7 +170,7 @@ class ToolBit(Asset, ABC):
         # Create a shape instance from scratch as a "placeholder".
         params = attrs.get("parameter", {})
         tool_bit_shape = shape_class(shape_id, **params)
-        Path.Log.debug(
+        logger.debug(
             f"ToolBit.from_dict: created shape instance {tool_bit_shape.name}"
             f" from {shape_id}. Uri: {tool_bit_shape.get_uri()}"
         )
@@ -222,7 +218,7 @@ class ToolBit(Asset, ABC):
             if hasattr(toolbit.obj, attr_name):
                 PathUtil.setProperty(toolbit.obj, attr_name, attr_value)
             else:
-                Path.Log.debug(
+                logger.debug(
                     f"ToolBit {id} Attribute '{attr_name}' not found on"
                     f" {selected_toolbit_subclass.__name__} ({tool_bit_shape})"
                     f" '{toolbit.obj.Label}'. Skipping."
@@ -369,7 +365,7 @@ class ToolBit(Asset, ABC):
         Ensure obj.ShapeID and obj.ToolBitID are set, handling legacy cases.
         Also promotes embedded toolbits to correct shape type if needed.
         """
-        Path.Log.track(f"Promoting tool bit {self.obj.Label}")
+        logger.track(f"Promoting tool bit {self.obj.Label}")
 
         # Ensure ShapeID is set (handling legacy BitShape/ShapeName)
         name = None
@@ -415,14 +411,14 @@ class ToolBit(Asset, ABC):
                 if shape_class and shape_class.name != "Custom":
                     self.obj.ShapeType = shape_class.name
                     self._tool_bit_shape = shape_class(shape_id)
-                    Path.Log.info(
+                    logger.info(
                         f"Promoted embedded toolbit '{self.obj.Label}' to shape '{shape_class.name}' via ShapeID"
                     )
         # Ensure ToolBitID is set
         if hasattr(self.obj, "File"):
             self.id = pathlib.Path(self.obj.File).stem
         self.obj.ToolBitID = self.id
-        Path.Log.debug(f"Set ToolBitID to {self.obj.ToolBitID}")
+        logger.debug(f"Set ToolBitID to {self.obj.ToolBitID}")
 
         # Update SpindleDirection:
         # Old tools may still have "CCW", "CW", "Off", "None".
@@ -441,7 +437,7 @@ class ToolBit(Asset, ABC):
         self.obj.SpindleDirection = ["Forward", "Reverse", "None"]
         self.obj.SpindleDirection = normalized_direction
         if old_direction != normalized_direction:
-            Path.Log.info(
+            logger.info(
                 f"Promoted tool bit {self.obj.Label}: SpindleDirection from {old_direction} to {self.obj.SpindleDirection}"
             )
 
@@ -451,7 +447,7 @@ class ToolBit(Asset, ABC):
             if hasattr(self.obj, name):
                 value = getattr(self.obj, name)
                 self.obj.removeProperty(name)
-                Path.Log.debug(f"Removed obsolete property '{name}' ('{value}').")
+                logger.debug(f"Removed obsolete property '{name}' ('{value}').")
 
         # Get the schema properties from the current shape
         shape_cls = ToolBitShape.get_subclass_by_name(self.obj.ShapeType)
@@ -467,7 +463,7 @@ class ToolBit(Asset, ABC):
             ):
                 continue
             try:
-                Path.Log.debug(f"Moving property '{prop_name}' to group '{PropertyGroupShape}'")
+                logger.debug(f"Moving property '{prop_name}' to group '{PropertyGroupShape}'")
 
                 # Get property details before removing
                 prop_type = self.obj.getTypeIdOfProperty(prop_name)
@@ -481,9 +477,9 @@ class ToolBit(Asset, ABC):
                 self.obj.addProperty(prop_type, prop_name, PropertyGroupShape, prop_doc)
                 self._in_update = True  # Prevent onChanged from running
                 PathUtil.setProperty(self.obj, prop_name, prop_value)
-                Path.Log.info(f"Moved property '{prop_name}' to group '{PropertyGroupShape}'")
+                logger.info(f"Moved property '{prop_name}' to group '{PropertyGroupShape}'")
             except Exception as e:
-                Path.Log.error(
+                logger.error(
                     f"Failed to move property '{prop_name}' to group '{PropertyGroupShape}': {e}"
                 )
                 raise
@@ -491,14 +487,14 @@ class ToolBit(Asset, ABC):
                 self._in_update = False
 
     def onDocumentRestored(self, obj):
-        Path.Log.track(obj.Label)
+        logger.track(obj.Label)
 
         # Assign self.obj to the restored object
         self.obj = obj
         self.obj.Proxy = self
         if not hasattr(self, "id"):
             self.id = str(uuid.uuid4())
-            Path.Log.debug(
+            logger.debug(
                 f"Assigned new id {self.id} for ToolBit {obj.Label} during document restore"
             )
 
@@ -533,7 +529,7 @@ class ToolBit(Asset, ABC):
         # and its properties.
         # Only re-initialize properties from shape if not restoring from file
         if self.obj.BitBody and self.obj.BitBody.Document != self.obj.Document:
-            Path.Log.debug(
+            logger.debug(
                 f"onDocumentRestored: Re-initializing BitBody for {self.obj.Label} after copy"
             )
             self._update_visual_representation()
@@ -545,7 +541,7 @@ class ToolBit(Asset, ABC):
             if hasattr(self.obj.ViewObject, "Proxy") and not isinstance(
                 self.obj.ViewObject.Proxy, ToolBitView.ViewProvider
             ):
-                Path.Log.debug(f"onDocumentRestored: Attaching ViewProvider for {self.obj.Label}")
+                logger.debug(f"onDocumentRestored: Attaching ViewProvider for {self.obj.Label}")
                 ToolBitView.ViewProvider(self.obj.ViewObject, "ToolBit")
 
         # Migrate legacy parameters using unified accessor
@@ -558,9 +554,9 @@ class ToolBit(Asset, ABC):
             if "FlatRadius" in self.obj.PropertiesList:
                 try:
                     self.obj.removeProperty("FlatRadius")
-                    Path.Log.info(f"Filtered out FlatRadius for {self.obj.Label}")
+                    logger.info(f"Filtered out FlatRadius for {self.obj.Label}")
                 except Exception as e:
-                    Path.Log.error(f"Failed to remove FlatRadius for {self.obj.Label}: {e}")
+                    logger.error(f"Failed to remove FlatRadius for {self.obj.Label}: {e}")
 
         # Copy properties from the restored object to the ToolBitShape.
         for name, item in self._tool_bit_shape.schema().items():
@@ -591,13 +587,13 @@ class ToolBit(Asset, ABC):
         tool_doc_obj and updates the visual representation.
         """
         if not isinstance(self.obj, DetachedDocumentObject):
-            Path.Log.warning(
+            logger.warning(
                 f"ToolBit {self.obj.Label} is already attached to a "
                 "DocumentObject. Skipping attach_to_obj."
             )
             return
 
-        Path.Log.track(f"Attaching ToolBit to {tool_doc_obj.Label}")
+        logger.track(f"Attaching ToolBit to {tool_doc_obj.Label}")
 
         temp_obj = self.obj
         self.obj = tool_doc_obj
@@ -620,7 +616,7 @@ class ToolBit(Asset, ABC):
         self._update_visual_representation()
 
     def onChanged(self, obj, prop):
-        Path.Log.track(obj.Label, prop)
+        logger.track(obj.Label, prop)
         # Avoid acting during document restore or internal updates
         if "Restore" in obj.State:
             return
@@ -629,7 +625,7 @@ class ToolBit(Asset, ABC):
             return
 
         if hasattr(self, "_in_update") and self._in_update:
-            Path.Log.debug(f"Skipping onChanged for {obj.Label} due to active update.")
+            logger.debug(f"Skipping onChanged for {obj.Label} due to active update.")
             return
 
         # We only care about updates that affect the Shape
@@ -639,7 +635,7 @@ class ToolBit(Asset, ABC):
         self._in_update = True
         try:
             new_value = obj.getPropertyByName(prop)
-            Path.Log.debug(
+            logger.debug(
                 f"Shape parameter '{prop}' changed to {new_value}. "
                 f"Queuing visual representation update."
             )
@@ -649,7 +645,7 @@ class ToolBit(Asset, ABC):
             self._in_update = False
 
     def onDelete(self, obj, arg2=None):
-        Path.Log.track(obj.Label)
+        logger.track(obj.Label)
         # Clean up any pending observer
         if hasattr(self, "_recompute_observer"):
             FreeCAD.removeDocumentObserver(self._recompute_observer)
@@ -739,11 +735,11 @@ class ToolBit(Asset, ABC):
                 if self.obj.getGroupOfProperty(name) == group:
                     try:
                         self.obj.removeProperty(name)
-                        Path.Log.debug(f"Removed property: {group}.{name}")
+                        logger.debug(f"Removed property: {group}.{name}")
                     except Exception as e:
-                        Path.Log.error(f"Failed removing property '{group}.{name}': {e}")
+                        logger.error(f"Failed removing property '{group}.{name}': {e}")
             else:
-                Path.Log.warning(f"'{group}.{name}' failed to remove property, not found")
+                logger.warning(f"'{group}.{name}' failed to remove property, not found")
 
     def _update_tool_properties(self):
         """
@@ -752,7 +748,7 @@ class ToolBit(Asset, ABC):
         parameters, and updates the edit state of them.
         Does not handle updating the visual representation.
         """
-        Path.Log.track(self.obj.Label)
+        logger.track(self.obj.Label)
 
         # 1. Add/Update properties for the new shape
         for name, item in self._tool_bit_shape.schema().items():
@@ -760,7 +756,7 @@ class ToolBit(Asset, ABC):
             prop_type = item[1]
 
             if not prop_type:
-                Path.Log.error(
+                logger.error(
                     f"No property type for parameter '{name}' in shape "
                     f"'{self._tool_bit_shape.name}'. Skipping."
                 )
@@ -769,7 +765,7 @@ class ToolBit(Asset, ABC):
             # Add new property
             if not hasattr(self.obj, name):
                 self.obj.addProperty(prop_type, name, "Shape", docstring)
-                Path.Log.debug(f"Added new shape property: {name}")
+                logger.debug(f"Added new shape property: {name}")
 
             # Ensure editor mode is correct
             self.obj.setEditorMode(name, 0)
@@ -795,7 +791,7 @@ class ToolBit(Asset, ABC):
 
             # Skip existing properties if they have a different type
             if hasattr(self.obj, name) and self.obj.getTypeIdOfProperty(name) != prop_type:
-                Path.Log.debug(
+                logger.debug(
                     f"Skipping existing property '{name}' due to type mismatch."
                     f" has type {self.obj.getTypeIdOfProperty(name)}, expected {prop_type}"
                 )
@@ -804,7 +800,7 @@ class ToolBit(Asset, ABC):
             # Add the property if it does not exist
             if not hasattr(self.obj, name):
                 self.obj.addProperty(prop_type, name, PropertyGroupShape, docstring)
-                Path.Log.debug(f"Added custom shape property: {name} ({prop_type})")
+                logger.debug(f"Added custom shape property: {name} ({prop_type})")
 
             # Set the property value
             if value is not None and getattr(self.obj, name) != value:
@@ -813,7 +809,7 @@ class ToolBit(Asset, ABC):
 
         # 3. Ensure Units property exists and is set
         if not hasattr(self.obj, "Units"):
-            Path.Log.debug("Adding Units property")
+            logger.debug("Adding Units property")
             self.obj.addProperty(
                 "App::PropertyEnumeration",
                 "Units",
@@ -870,7 +866,7 @@ class ToolBit(Asset, ABC):
 
         if not self._visual_update_queued:
             self._visual_update_queued = True
-            Path.Log.debug(f"Queuing visual update for {self.obj.Label}")
+            logger.debug(f"Queuing visual update for {self.obj.Label}")
 
             # Set up a document observer to process the update after recompute
             self._setup_recompute_observer()
@@ -878,7 +874,7 @@ class ToolBit(Asset, ABC):
     def _setup_recompute_observer(self):
         """Set up a document observer to process queued visual updates after recompute."""
         if not hasattr(self, "_recompute_observer"):
-            Path.Log.debug(f"Setting up recompute observer for {self.obj.Label}")
+            logger.debug(f"Setting up recompute observer for {self.obj.Label}")
             self._recompute_observer = ToolBitRecomputeObserver(self)
             FreeCAD.addDocumentObserver(self._recompute_observer)
 
@@ -886,7 +882,7 @@ class ToolBit(Asset, ABC):
         """Process the queued visual update."""
         if hasattr(self, "_visual_update_queued") and self._visual_update_queued:
             self._visual_update_queued = False
-            Path.Log.debug(f"Processing queued visual update for {self.obj.Label}")
+            logger.debug(f"Processing queued visual update for {self.obj.Label}")
             self._update_visual_representation()
 
             # Clean up the observer
@@ -902,7 +898,7 @@ class ToolBit(Asset, ABC):
         """
         if isinstance(self.obj, DetachedDocumentObject):
             return
-        Path.Log.track(self.obj.Label)
+        logger.track(self.obj.Label)
 
         # Remove existing BitBody if it exists
         self._removeBitBody()
@@ -912,7 +908,7 @@ class ToolBit(Asset, ABC):
             body = self._tool_bit_shape.make_body(self.obj.Document)
 
             if not body:
-                Path.Log.error(
+                logger.error(
                     f"Failed to create visual representation for shape "
                     f"'{self._tool_bit_shape.name}'"
                 )
@@ -928,7 +924,7 @@ class ToolBit(Asset, ABC):
                 self.obj.BitBody.ViewObject.ShowInTree = False
 
         except Exception as e:
-            Path.Log.error(
+            logger.error(
                 f"Failed to create visual representation using make_body for shape"
                 f" '{self._tool_bit_shape.name}': {e}"
             )
@@ -944,7 +940,7 @@ class ToolBit(Asset, ABC):
         Returns:
             A dictionary with tool bit properties, JSON-serializable.
         """
-        Path.Log.track(self.obj.Label)
+        logger.track(self.obj.Label)
         attrs = {}
         attrs["version"] = 2
         attrs["id"] = self.id
@@ -966,7 +962,7 @@ class ToolBit(Asset, ABC):
         for name in property_names:
             value = getattr(self.obj, name, None)
             if value is None or isinstance(value, FreeCAD.DocumentObject):
-                Path.Log.warning(
+                logger.warning(
                     f"Excluding property '{name}' from serialization "
                     f"(type {type(value).__name__ if value is not None else 'None'}, value {value})"
                 )
@@ -974,12 +970,12 @@ class ToolBit(Asset, ABC):
                 serialized_value = to_json(value)
                 attrs["parameter"][name] = serialized_value
             except (TypeError, ValueError) as e:
-                Path.Log.warning(
+                logger.warning(
                     f"Excluding property '{name}' from serialization "
                     f"(type {type(value).__name__}, value {value}): {e}"
                 )
 
-        Path.Log.debug(f"to_dict output for {self.obj.Label}: {attrs}")
+        logger.debug(f"to_dict output for {self.obj.Label}: {attrs}")
         return attrs
 
     def __getstate__(self):
@@ -989,7 +985,7 @@ class ToolBit(Asset, ABC):
         Returns:
             A dictionary with picklable and JSON-serializable state.
         """
-        Path.Log.track("ToolBit.__getstate__")
+        logger.track("ToolBit.__getstate__")
         state = {
             "id": getattr(self, "id", str(uuid.uuid4())),  # Fallback to new UUID
             "_in_update": getattr(self, "_in_update", False),  # Fallback to False

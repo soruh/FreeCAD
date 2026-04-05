@@ -27,8 +27,7 @@ import Path
 import Path.Base.Generator.drill as generator
 import CAMTests.PathTestUtils as PathTestUtils
 
-Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
-Path.Log.trackModule(Path.Log.thisModule())
+logger = Path.Log.getModuleLogger(withLevel=Path.Log.Level.INFO, enableTracking=True)
 
 
 class TestPathDrillGenerator(PathTestUtils.PathTestBase):

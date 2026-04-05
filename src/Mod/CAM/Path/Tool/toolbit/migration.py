@@ -90,11 +90,7 @@ class ParameterAccessor:
             return getattr(self.target, "ShapeType", None)
 
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 def migrate_parameters(accessor: ParameterAccessor) -> bool:
@@ -131,7 +127,7 @@ def migrate_parameters(accessor: ParameterAccessor) -> bool:
         inferred_units = units_from_json(params)
         if inferred_units:
             accessor.set("Units", inferred_units)
-            Path.Log.info(f"Adding Units as '{inferred_units}' for {name}")
+            logger.info(f"Adding Units as '{inferred_units}' for {name}")
             migrated = True
 
     # Only run migration logic if shape type == 'Bullnose'
@@ -147,7 +143,7 @@ def migrate_parameters(accessor: ParameterAccessor) -> bool:
             )
             accessor.set_editor_mode("CornerRadius", 0)
             accessor.set("CornerRadius", value)
-            Path.Log.info(f"Copied TorusRadius to CornerRadius={value} for {name}")
+            logger.info(f"Copied TorusRadius to CornerRadius={value} for {name}")
             migrated = True
 
         # Case 2: FlatRadius and Diameter exist, calculate CornerRadius
@@ -178,9 +174,9 @@ def migrate_parameters(accessor: ParameterAccessor) -> bool:
                 )
                 accessor.set_editor_mode("CornerRadius", 0)
                 accessor.set("CornerRadius", value)
-                Path.Log.info(f"Migrated FlatRadius/Diameter to CornerRadius={value} for {name}")
+                logger.info(f"Migrated FlatRadius/Diameter to CornerRadius={value} for {name}")
                 migrated = True
             except Exception as e:
-                Path.Log.error(f"Failed to migrate FlatRadius for toolbit {name}: {e}")
+                logger.error(f"Failed to migrate FlatRadius for toolbit {name}: {e}")
 
     return migrated

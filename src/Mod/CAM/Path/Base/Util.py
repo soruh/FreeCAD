@@ -35,11 +35,7 @@ import Path
 
 translate = FreeCAD.Qt.translate
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 def _getProperty(obj, prop):
@@ -53,10 +49,10 @@ def _getProperty(obj, prop):
         attr = getattr(o, name)
 
     if o == attr:
-        Path.Log.debug(translate("PathGui", "%s has no property %s (%s)") % (obj.Label, prop, name))
+        logger.debug(translate("PathGui", "%s has no property %s (%s)") % (obj.Label, prop, name))
         return (None, None, None)
 
-    # Path.Log.debug("found property %s of %s (%s: %s)" % (prop, obj.Label, name, attr))
+    # logger.debug("found property %s of %s (%s: %s)" % (prop, obj.Label, name, attr))
     return (o, attr, name)
 
 
@@ -94,7 +90,7 @@ def isValidBaseObject(obj):
     """isValidBaseObject(obj) ... returns true if the object can be used as a base for a job."""
     if hasattr(obj, "getParentGeoFeatureGroup") and obj.getParentGeoFeatureGroup():
         # Can't link to anything inside a geo feature group anymore
-        Path.Log.debug("%s is inside a geo feature group" % obj.Label)
+        logger.debug("%s is inside a geo feature group" % obj.Label)
         return False
     if hasattr(obj, "BitBody") and hasattr(obj, "ShapeName"):
         # ToolBit's are not valid base objects
@@ -104,10 +100,10 @@ def isValidBaseObject(obj):
     if any(hasattr(ob, "ToolBitID") for ob in getattr(obj, "InListRecursive", [])):
         return False
     if obj.TypeId in NotValidBaseTypeIds:
-        Path.Log.debug("%s is blacklisted (%s)" % (obj.Label, obj.TypeId))
+        logger.debug("%s is blacklisted (%s)" % (obj.Label, obj.TypeId))
         return False
     if hasattr(obj, "Sheets") or hasattr(obj, "TagText"):  # Arch.Panels and Arch.PanelCut
-        Path.Log.debug("%s is not an Arch.Panel" % (obj.Label))
+        logger.debug("%s is not an Arch.Panel" % (obj.Label))
         return False
     import Part
 

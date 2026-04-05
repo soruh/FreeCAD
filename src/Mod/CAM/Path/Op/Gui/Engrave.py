@@ -36,11 +36,7 @@ __author__ = "sliptonic (Brad Collette)"
 __url__ = "https://www.freecad.org"
 __doc__ = "Engrave operation page controller and command implementation."
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 translate = FreeCAD.Qt.translate
@@ -71,13 +67,13 @@ class TaskPanelBaseGeometryPage(PathOpGui.TaskPanelBaseGeometryPage):
             job = PathUtils.findParentJob(self.obj)
             base = job.Proxy.resourceClone(job, sel.Object)
             if not base:
-                Path.Log.notice(
+                logger.notice(
                     (translate("CAM", "%s is not a Base Model object of the job %s") + "\n")
                     % (sel.Object.Label, job.Label)
                 )
                 continue
             if base in shapes:
-                Path.Log.notice(
+                logger.notice(
                     (translate("CAM", "Base shape %s already in the list") + "\n")
                     % (sel.Object.Label)
                 )
@@ -87,7 +83,7 @@ class TaskPanelBaseGeometryPage(PathOpGui.TaskPanelBaseGeometryPage):
                     # selectively add some elements of the drawing to the Base
                     for sub in sel.SubElementNames:
                         if "Vertex" in sub:
-                            Path.Log.info("Ignoring vertex")
+                            logger.info("Ignoring vertex")
                         else:
                             self.obj.Proxy.addBase(self.obj, base, sub)
                 else:
@@ -117,7 +113,7 @@ class TaskPanelBaseGeometryPage(PathOpGui.TaskPanelBaseGeometryPage):
         self.form.baseList.blockSignals(False)
 
     def updateBase(self):
-        Path.Log.track()
+        logger.track()
         shapes = []
         for i in range(self.form.baseList.count()):
             item = self.form.baseList.item(i)
@@ -125,7 +121,7 @@ class TaskPanelBaseGeometryPage(PathOpGui.TaskPanelBaseGeometryPage):
             sub = item.data(self.super().DataObjectSub)
             if not sub:
                 shapes.append(obj)
-        Path.Log.debug("Setting new base shapes: %s -> %s" % (self.obj.BaseShapes, shapes))
+        logger.debug("Setting new base shapes: %s -> %s" % (self.obj.BaseShapes, shapes))
         self.obj.BaseShapes = shapes
         return self.super().updateBase()
 

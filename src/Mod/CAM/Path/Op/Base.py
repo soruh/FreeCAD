@@ -41,11 +41,7 @@ __author__ = "sliptonic (Brad Collette)"
 __url__ = "https://www.freecad.org"
 __doc__ = "Base class and properties implementation for all CAM operations."
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 translate = FreeCAD.Qt.translate
 
@@ -158,7 +154,7 @@ class ObjectOp(object):
             obj.setEditorMode("OpStockZMin", 1)  # read-only
 
     def __init__(self, obj, name, parentJob=None):
-        Path.Log.track()
+        logger.track()
 
         obj.addProperty(
             "App::PropertyBool",
@@ -343,8 +339,8 @@ class ObjectOp(object):
         self.initOperation(obj)
 
         for n in self.opPropertyEnumerations():
-            Path.Log.debug("n: {}".format(n))
-            Path.Log.debug("n[0]: {}  n[1]: {}".format(n[0], n[1]))
+            logger.debug("n: {}".format(n))
+            logger.debug("n[0]: {}  n[1]: {}".format(n[0], n[1]))
             if hasattr(obj, n[0]):
                 setattr(obj, n[0], n[1])
 
@@ -385,11 +381,11 @@ class ObjectOp(object):
         data = list()
         idx = 0 if dataType == "translated" else 1
 
-        Path.Log.debug(enums)
+        logger.debug(enums)
 
         for k, v in enumerate(enums):
             data.append((v, [tup[idx] for tup in enums[v]]))
-        Path.Log.debug(data)
+        logger.debug(data)
 
         return data
 
@@ -405,13 +401,13 @@ class ObjectOp(object):
                 obj.setEditorMode("OpFinalDepth", 2)
 
     def onDocumentRestored(self, obj):
-        Path.Log.track()
+        logger.track()
         features = self.opFeatures(obj)
         if (
             FeatureBaseGeometry & features
             and "App::PropertyLinkSubList" == obj.getTypeIdOfProperty("Base")
         ):
-            Path.Log.info("Replacing link property with global link (%s)." % obj.State)
+            logger.info("Replacing link property with global link (%s)." % obj.State)
             base = obj.Base
             obj.removeProperty("Base")
             self.addBaseProperty(obj)
@@ -596,8 +592,8 @@ class ObjectOp(object):
             obj.OpToolDiameter = obj.ToolController.Tool.Diameter
 
         if FeatureCoolant & features:
-            Path.Log.track()
-            Path.Log.debug(obj.getEnumerationsOfProperty("CoolantMode"))
+            logger.track()
+            logger.debug(obj.getEnumerationsOfProperty("CoolantMode"))
             obj.CoolantMode = job.SetupSheet.CoolantMode
 
         if FeatureDepths & features:
@@ -643,11 +639,11 @@ class ObjectOp(object):
 
         if not job:
             if not ignoreErrors:
-                Path.Log.error(translate("CAM", "No parent job found for operation."))
+                logger.error(translate("CAM", "No parent job found for operation."))
             return False
         if not job.Model.Group:
             if not ignoreErrors:
-                Path.Log.error(
+                logger.error(
                     translate("CAM", "Parent job %s doesn't have a base object") % job.Label
                 )
             return False
@@ -701,7 +697,7 @@ class ObjectOp(object):
                         zmin = max(zmin, faceZmin(bb, fbb))
                         zmax = max(zmax, fbb.ZMax)
                     except Part.OCCError as e:
-                        Path.Log.error(e)
+                        logger.error(e)
 
         else:
             # clearing with stock boundaries
@@ -743,7 +739,7 @@ class ObjectOp(object):
                     for sub in sublist:
                         o.Shape.getElement(sub)
             except Part.OCCError:
-                Path.Log.error("{} - stale base geometry detected - clearing.".format(obj.Label))
+                logger.error("{} - stale base geometry detected - clearing.".format(obj.Label))
                 obj.Base = []
                 return True
         return False
@@ -769,7 +765,7 @@ class ObjectOp(object):
         Finally the base implementation adds a rapid move to clearance height and assigns
         the receiver's Path property from the command list.
         """
-        Path.Log.track()
+        logger.track()
 
         if not obj.Active:
             path = Path.Path("(inactive operation)")
@@ -785,7 +781,7 @@ class ObjectOp(object):
         if FeatureTool & self.opFeatures(obj):
             tc = obj.ToolController
             if tc is None or tc.ToolNumber == 0:
-                Path.Log.error(
+                logger.error(
                     translate(
                         "CAM",
                         "No Tool Controller is selected. We need a tool to build a Path.",
@@ -799,7 +795,7 @@ class ObjectOp(object):
                 self.horizRapid = tc.HorizRapid.Value
                 tool = tc.Proxy.getTool(tc)
                 if not tool or float(tool.Diameter) == 0:
-                    Path.Log.error(
+                    logger.error(
                         translate(
                             "CAM",
                             "No Tool found or diameter is zero. We need a tool to build a Path.",
@@ -876,7 +872,7 @@ class ObjectOp(object):
         return result
 
     def addBase(self, obj, base, sub):
-        Path.Log.track(obj, base, sub)
+        logger.track(obj, base, sub)
         base = PathUtil.getPublicObject(base)
 
         if self._setBaseAndStock(obj):
@@ -891,7 +887,7 @@ class ObjectOp(object):
 
             for p, el in baselist:
                 if p == base and sub in el:
-                    Path.Log.notice(
+                    logger.notice(
                         (translate("CAM", "Base object %s.%s already in the list") + "\n")
                         % (base.Label, sub)
                     )
@@ -901,7 +897,7 @@ class ObjectOp(object):
                 baselist.append((base, sub))
                 obj.Base = baselist
             else:
-                Path.Log.notice(
+                logger.notice(
                     (translate("CAM", "Base object %s.%s rejected by operation") + "\n")
                     % (base.Label, sub)
                 )
@@ -1120,9 +1116,9 @@ class Compass:
             "path_dir": self.path_dir,
         }
 
-        Path.Log.debug("Machining Compass config:")
+        logger.debug("Machining Compass config:")
         for k, v in report_data.items():
-            Path.Log.debug(f"  {k:15s}: {v}")
+            logger.debug(f"  {k:15s}: {v}")
         return report_data
 
 
@@ -1130,7 +1126,7 @@ def getCycleTimeEstimate(obj):
     tc = obj.ToolController
 
     if tc is None or tc.ToolNumber == 0:
-        Path.Log.error(translate("CAM", "No Tool Controller selected."))
+        logger.error(translate("CAM", "No Tool Controller selected."))
         return translate("CAM", "Tool Error")
 
     hFeedrate = tc.HorizFeed.Value
@@ -1140,7 +1136,7 @@ def getCycleTimeEstimate(obj):
 
     if hFeedrate == 0 or vFeedrate == 0:
         if not Path.Preferences.suppressAllSpeedsWarning():
-            Path.Log.warning(
+            logger.warning(
                 translate(
                     "CAM",
                     "Tool Controller feedrates required to calculate the cycle time.",
@@ -1149,7 +1145,7 @@ def getCycleTimeEstimate(obj):
         return translate("CAM", "Tool Feedrate Error")
 
     if (hRapidrate == 0 or vRapidrate == 0) and not Path.Preferences.suppressRapidSpeedsWarning():
-        Path.Log.warning(
+        logger.warning(
             translate(
                 "CAM",
                 "Add Tool Controller Rapid Speeds on the SetupSheet for more accurate cycle times.",

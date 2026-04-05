@@ -29,11 +29,7 @@ import Path.Dressup.Utils as PathDressup
 import Path.Main.Stock as PathStock
 import PathScripts.PathUtils as PathUtils
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 translate = FreeCAD.Qt.translate
@@ -166,11 +162,11 @@ class DressupPathBoundary(object):
 
     def execute(self, obj):
         if not hasattr(obj, "Stock") or obj.Stock is None:
-            Path.Log.error("BoundaryStock (Stock) missing; cannot execute dressup.")
+            logger.error("BoundaryStock (Stock) missing; cannot execute dressup.")
             obj.Path = Path.Path([])
             return
         if not hasattr(obj.Stock, "Shape") or obj.Stock.Shape is None:
-            Path.Log.error("Boundary stock has no Shape; cannot execute dressup.")
+            logger.error("Boundary stock has no Shape; cannot execute dressup.")
             obj.Path = Path.Path([])
             return
         pb = PathBoundary(obj.Base, obj.Stock.Shape, obj.Inside, obj.RetractThreshold)
@@ -199,7 +195,7 @@ class PathBoundary:
         self.firstBoundary = True
 
     def boundaryCommands(self, begin, end, vertFeed, horizFeed=None):
-        Path.Log.track(_vstr(begin), _vstr(end))
+        logger.track(_vstr(begin), _vstr(end))
         if end and Path.Geom.pointsCoincide(begin, end):
             return []
         cmds = []
@@ -236,7 +232,7 @@ class PathBoundary:
 
         path = PathUtils.getPathWithPlacement(self.baseOp)
         if len(path.Commands) == 0:
-            Path.Log.warning("No Path Commands for %s" % self.baseOp.Label)
+            logger.warning("No Path Commands for %s" % self.baseOp.Label)
             return []
 
         tc = PathDressup.toolController(self.baseOp)
@@ -284,7 +280,7 @@ class PathBoundary:
                     # it's really a shame that one cannot trust the sequence and/or
                     # orientation of edges
                     if 1 == len(inside) and 0 == len(outside):
-                        Path.Log.track(_vstr(pos), _vstr(lastExit), " + ", cmd)
+                        logger.track(_vstr(pos), _vstr(lastExit), " + ", cmd)
                         # cmd fully included by boundary
                         if lastExit:
                             if not (bogusX or bogusY):
@@ -296,17 +292,17 @@ class PathBoundary:
                         commands.append(cmd)
                         pos = Path.Geom.commandEndPoint(cmd, pos)
                     elif 0 == len(inside) and 1 == len(outside):
-                        Path.Log.track(_vstr(pos), _vstr(lastExit), " - ", cmd)
+                        logger.track(_vstr(pos), _vstr(lastExit), " - ", cmd)
                         # cmd fully excluded by boundary
                         if not lastExit:
                             lastExit = pos
                         pos = Path.Geom.commandEndPoint(cmd, pos)
                     else:
-                        Path.Log.track(_vstr(pos), _vstr(lastExit), len(inside), len(outside), cmd)
+                        logger.track(_vstr(pos), _vstr(lastExit), len(inside), len(outside), cmd)
                         # cmd pierces boundary
                         while inside or outside:
                             ie = [e for e in inside if Path.Geom.edgeConnectsTo(e, pos)]
-                            Path.Log.track(ie)
+                            logger.track(ie)
                             if ie:
                                 e = ie[0]
                                 LastPt = e.valueAt(e.LastParameter)
@@ -325,7 +321,7 @@ class PathBoundary:
                                             )
                                         )
                                     lastExit = None
-                                Path.Log.track(e, flip)
+                                logger.track(e, flip)
                                 if not (
                                     bogusX or bogusY
                                 ):  # don't insert false paths based on bogus m/c position
@@ -344,7 +340,7 @@ class PathBoundary:
                                 lastExit = newPos
                             else:
                                 oe = [e for e in outside if Path.Geom.edgeConnectsTo(e, pos)]
-                                Path.Log.track(oe)
+                                logger.track(oe)
                                 if oe:
                                     e = oe[0]
                                     ptL = e.valueAt(e.LastParameter)
@@ -355,7 +351,7 @@ class PathBoundary:
                                     outside.remove(e)
                                     pos = newPos
                                 else:
-                                    Path.Log.error("huh?")
+                                    logger.error("huh?")
                                     import Part
 
                                     Part.show(Part.Vertex(pos), "pos")
@@ -371,13 +367,13 @@ class PathBoundary:
                     # pos = Path.Geom.commandEndPoint(cmd, pos)
                 # Eif
             else:
-                Path.Log.track("no-move", cmd)
+                logger.track("no-move", cmd)
                 commands.append(cmd)
         if lastExit:
             commands.extend(self.boundaryCommands(lastExit, None, tc.VertFeed.Value))
             lastExit = None
 
-        Path.Log.track(commands)
+        logger.track(commands)
         return Path.Path(commands)
 
 
@@ -388,7 +384,7 @@ def Create(base, name="DressupPathBoundary"):
     """Create(base, name='DressupPathBoundary') ... creates a dressup limiting base's Path to a boundary."""
 
     if not base.isDerivedFrom("Path::Feature"):
-        Path.Log.error(
+        logger.error(
             translate("CAM_DressupPathBoundary", "The selected object is not a path") + "\n"
         )
         return None

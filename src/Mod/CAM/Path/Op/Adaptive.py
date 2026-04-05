@@ -56,11 +56,7 @@ FeatureExtensions = LazyLoader("Path.Op.FeatureExtension", globals(), "Path.Op.F
 DraftGeomUtils = LazyLoader("DraftGeomUtils", globals(), "DraftGeomUtils")
 
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 translate = FreeCAD.Qt.translate
@@ -519,7 +515,7 @@ def Execute(op, obj):
     if FreeCAD.GuiUp:
         sceneGraph = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
 
-    Path.Log.info("*** Adaptive toolpath processing started...\n")
+    logger.info("*** Adaptive toolpath processing started...\n")
 
     # hide old toolpaths during recalculation
     obj.Path = Path.Path("(Calculating...)")
@@ -666,12 +662,12 @@ def Execute(op, obj):
         GenerateGCode(op, obj, adaptiveResults)
 
         if not obj.StopProcessing:
-            Path.Log.info("*** Done. Elapsed time: %f sec\n\n" % (time.time() - start))
+            logger.info("*** Done. Elapsed time: %f sec\n\n" % (time.time() - start))
             obj.AdaptiveOutputState = adaptiveResults
             obj.AdaptiveInputState = inputStateObject
 
         else:
-            Path.Log.info("*** Processing cancelled (after: %f sec).\n\n" % (time.time() - start))
+            logger.info("*** Processing cancelled (after: %f sec).\n\n" % (time.time() - start))
 
     finally:
         if FreeCAD.GuiUp:
@@ -717,7 +713,7 @@ def ExecuteModelAware(op, obj):
     if FreeCAD.GuiUp:
         sceneGraph = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
 
-    Path.Log.info("*** Adaptive toolpath processing started...\n")
+    logger.info("*** Adaptive toolpath processing started...\n")
 
     # hide old toolpaths during recalculation
     obj.Path = Path.Path("(Calculating...)")
@@ -991,12 +987,12 @@ def ExecuteModelAware(op, obj):
         GenerateGCode(op, obj, adaptiveResults)
 
         if not obj.StopProcessing:
-            Path.Log.info("*** Done. Elapsed time: %f sec\n\n" % (time.time() - start))
+            logger.info("*** Done. Elapsed time: %f sec\n\n" % (time.time() - start))
             obj.AdaptiveOutputState = adaptiveResults
             obj.AdaptiveInputState = inputStateObject
 
         else:
-            Path.Log.info("*** Processing cancelled (after: %f sec).\n\n" % (time.time() - start))
+            logger.info("*** Processing cancelled (after: %f sec).\n\n" % (time.time() - start))
 
     finally:
         if FreeCAD.GuiUp:
@@ -1129,11 +1125,11 @@ def projectFacesToXY(faces, minEdgeLength=1e-10):
         try:
             fusion = fusion.removeSplitter()
         except Exception:
-            Path.Log.warning("projectFacesToXY: removeSplitter failure")
+            logger.warning("projectFacesToXY: removeSplitter failure")
         try:
             fusion = DraftGeomUtils.concatenate(fusion)
         except Exception:
-            Path.Log.warning("projectFacesToXY: concatenate failure")
+            logger.warning("projectFacesToXY: concatenate failure")
         return fusion
     else:
         return Part.Shape()
@@ -1347,7 +1343,7 @@ def _workingEdgeHelperManual(op, obj, depths):
     # If the user selected only faces that don't have an XY projection AND no
     # edges, give a useful message
     if not selectedRefined.Wires:
-        Path.Log.warning("Selected faces/wires have no projection on the XY plane")
+        logger.warning("Selected faces/wires have no projection on the XY plane")
         return insideRegions, outsideRegions
 
     for depth in depths:
@@ -1731,11 +1727,11 @@ class PathAdaptive(PathOp.ObjectOp):
         data = list()
         idx = 0 if dataType == "translated" else 1
 
-        Path.Log.debug(enums)
+        logger.debug(enums)
 
         for k, v in enumerate(enums):
             data.append((v, [tup[idx] for tup in enums[v]]))
-        Path.Log.debug(data)
+        logger.debug(data)
 
         return data
 

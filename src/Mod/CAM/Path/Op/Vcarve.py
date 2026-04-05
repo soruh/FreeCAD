@@ -42,11 +42,7 @@ BORDERLINE = 6
 
 # There is a bug in logging library. To enable debugging - set True also in Gui/Vcarve.py
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 translate = FreeCAD.Qt.translate
@@ -320,7 +316,7 @@ class _Geometry(object):
                 zStart = obj.Base[0][0].Shape.BoundBox.ZMax
         else:
             zStart = model.Shape.BoundBox.ZMax
-            Path.Log.error("Base object not set")
+            logger.error("Base object not set")
         finalDepth = obj.FinalDepth.Value
         stepDown = abs(obj.StepDown.Value)
 
@@ -485,7 +481,7 @@ class ObjectVcarve(PathEngraveBase.ObjectOp):
 
         def insert_many_wires(vd, wires):
             for wire in wires:
-                Path.Log.debug("discretize value: {}".format(obj.Discretize))
+                logger.debug("discretize value: {}".format(obj.Discretize))
                 pts = wire.discretize(QuasiDeflection=obj.Discretize)
                 ptv = [FreeCAD.Vector(p.x, p.y) for p in pts]
                 # Check over the last point before just closing the polygon
@@ -499,7 +495,7 @@ class ObjectVcarve(PathEngraveBase.ObjectOp):
                 if len(ptv) > 0:
                     dist = ptv[-1].distanceToPoint(ptv[0])
                     if dist < FreeCAD.Base.Precision.confusion():
-                        Path.Log.debug(
+                        logger.debug(
                             "Removing bad carve point: {} from polygon origin".format(dist)
                         )
                         del ptv[-1]
@@ -661,7 +657,7 @@ class ObjectVcarve(PathEngraveBase.ObjectOp):
                 _maximumUsableDepth = _get_maximumUsableDepth(wires, geom)
                 if _maximumUsableDepth is not None:
                     maximumUsableDepth = _maximumUsableDepth
-                    Path.Log.debug(f"Maximum usable depth for current face: {maximumUsableDepth}")
+                    logger.debug(f"Maximum usable depth for current face: {maximumUsableDepth}")
 
             # first pass
             cutWires(wires, pathlist, obj.OptimizeMovements)
@@ -681,7 +677,7 @@ class ObjectVcarve(PathEngraveBase.ObjectOp):
 
     def opExecute(self, obj):
         """opExecute(obj) ... process engraving operation"""
-        Path.Log.track()
+        logger.track()
 
         self.voronoiDebugMedialCache = None
         self.voronoiDebugEdgesCache = None
@@ -690,7 +686,7 @@ class ObjectVcarve(PathEngraveBase.ObjectOp):
             return
 
         if not hasattr(obj.ToolController.Tool, "CuttingEdgeAngle"):
-            Path.Log.info(
+            logger.info(
                 translate(
                     "CAM_Vcarve",
                     "VCarve requires an engraving cutter with a cutting edge angle",
@@ -699,7 +695,7 @@ class ObjectVcarve(PathEngraveBase.ObjectOp):
             return
 
         if obj.ToolController.Tool.CuttingEdgeAngle >= 180.0:
-            Path.Log.info(
+            logger.info(
                 translate("CAM_Vcarve", "Engraver cutting edge angle must be < 180 degrees.")
             )
             return
@@ -726,7 +722,7 @@ class ObjectVcarve(PathEngraveBase.ObjectOp):
             if faces:
                 self.buildCommandList(obj, faces)
             else:
-                Path.Log.error(
+                logger.error(
                     translate(
                         "PathVcarve",
                         "The Job Base Object has no engraveable element. Engraving operation will produce no output.",
@@ -734,12 +730,12 @@ class ObjectVcarve(PathEngraveBase.ObjectOp):
                 )
 
         except Exception:
-            Path.Log.warning(
+            logger.warning(
                 "Error processing Base object. Engraving operation will produce no output."
             )
             import traceback
 
-            Path.Log.error(f"Engraving operation exception: {traceback.format_exc()}")
+            logger.error(f"Engraving operation exception: {traceback.format_exc()}")
 
     def opUpdateDepths(self, obj, ignoreErrors=False):
         """updateDepths(obj) ... engraving is always done at the top most z-value"""
@@ -768,7 +764,7 @@ class ObjectVcarve(PathEngraveBase.ObjectOp):
         """Debug function to display calculated voronoi medial wires"""
 
         if not getattr(self, "voronoiDebugMedialCache", None):
-            Path.Log.error("debugVoronoi: empty debug cache. Recompute VCarve operation first")
+            logger.error("debugVoronoi: empty debug cache. Recompute VCarve operation first")
             return
 
         vPart = FreeCAD.activeDocument().addObject("App::Part", f"{obj.Name}-VoronoiDebugMedial")
@@ -795,7 +791,7 @@ class ObjectVcarve(PathEngraveBase.ObjectOp):
         """Debug function to display calculated voronoi edges"""
 
         if not getattr(self, "voronoiDebugEdgeCache", None):
-            Path.Log.error("debugVoronoi: empty debug cache. Recompute VCarve operation first")
+            logger.error("debugVoronoi: empty debug cache. Recompute VCarve operation first")
             return
 
         vPart = FreeCAD.activeDocument().addObject("App::Part", f"{obj.Name}-VoronoiDebugEdge")

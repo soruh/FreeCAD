@@ -29,11 +29,7 @@ import Path.Op.Pocket as PathPocket
 
 from PySide.QtCore import QT_TRANSLATE_NOOP
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 __title__ = "CAM Pocket Operation UI"

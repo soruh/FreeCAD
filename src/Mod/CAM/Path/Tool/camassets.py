@@ -29,11 +29,7 @@ from Path.Preferences import addToolPreferenceObserver
 from .assets import AssetManager, AssetUri, Asset, FileStore
 from .toolbit.migration import ParameterAccessor, migrate_parameters
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 def ensure_library_assets_initialized(asset_manager: AssetManager, store_name: str = "local"):
@@ -67,19 +63,19 @@ def ensure_toolbits_have_shape_type(asset_manager: AssetManager, store_name: str
                 str(attrs.get("shape", ""))
             ).stem  # backward compatibility. used to be a filename
             if not shape_id:
-                Path.Log.error(f"ToolBit {uri} missing shape ID")
+                logger.error(f"ToolBit {uri} missing shape ID")
                 continue
 
             try:
                 shape_class = ToolBitShape.get_shape_class_from_id(shape_id)
             except Exception as e:
-                Path.Log.error(f"Failed to load toolbit {uri}: {e}. Skipping")
+                logger.error(f"Failed to load toolbit {uri}: {e}. Skipping")
                 continue
             if not shape_class:
-                Path.Log.error(f"Toolbit {uri} has no shape-type attribute, and failed to infer it")
+                logger.error(f"Toolbit {uri} has no shape-type attribute, and failed to infer it")
                 continue
             attrs["shape-type"] = shape_class.name
-            Path.Log.info(
+            logger.info(
                 f"Migrating toolbit {uri}: Adding shape-type attribute '{shape_class.name}'"
             )
             changed = True
@@ -170,7 +166,7 @@ def ensure_assets_initialized(asset_manager: AssetManager, store="local"):
 
 
 def _on_asset_path_changed(group, key, value):
-    Path.Log.info(f"CAM asset directory changed in preferences: {group} {key} {value}")
+    logger.info(f"CAM asset directory changed in preferences: {group} {key} {value}")
     user_asset_store.set_dir(value)
     ensure_assets_initialized(cam_assets)
 
@@ -224,9 +220,9 @@ class CamAssetManager(AssetManager):
         try:
             ensure_assets_initialized(cam_assets)
         except Exception as e:
-            Path.Log.error(f"Failed to initialize CAM assets in {user_asset_store._base_dir}: {e}")
+            logger.error(f"Failed to initialize CAM assets in {user_asset_store._base_dir}: {e}")
         else:
-            Path.Log.debug(f"Using CAM assets in {user_asset_store._base_dir}")
+            logger.debug(f"Using CAM assets in {user_asset_store._base_dir}")
 
     def get(
         self,
@@ -254,6 +250,6 @@ class CamAssetManager(AssetManager):
 
 
 # Set up the CAM asset manager.
-Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger.setLevel(Path.Log.Level.INFO)
 cam_assets = CamAssetManager()
 addToolPreferenceObserver(_on_asset_path_changed)

@@ -27,7 +27,8 @@ import Path.Base.SetupSheet as PathSetupSheet
 import json
 import sys
 
-# Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
+logger = Path.Log.getModuleLogger(withLevel=None, enableTracking=None)
+
 
 from CAMTests.PathTestUtils import PathTestBase
 
@@ -38,7 +39,7 @@ def refstring(string):
 
 class SomeOp(object):
     def __init__(self, obj):
-        Path.Log.track(obj, type(obj))
+        logger.track(obj, type(obj))
         obj.addProperty("App::PropertyPercent", "StepOver", "Base", "Some help you are")
 
     @classmethod
@@ -47,7 +48,7 @@ class SomeOp(object):
 
     @classmethod
     def Create(cls, name, obj=None, parentJob=None):
-        Path.Log.track(name, obj)
+        logger.track(name, obj)
         if obj is None:
             obj = FreeCAD.ActiveDocument.addObject("Path::FeaturePython", name)
         obj.Proxy = SomeOp(obj)

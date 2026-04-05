@@ -44,11 +44,7 @@ __author__ = "sliptonic (Brad Collette)"
 __url__ = "https://www.freecad.org"
 __doc__ = "Task panel for Camotics Simulation"
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 translate = FreeCAD.Qt.translate
 
@@ -78,7 +74,7 @@ class CAMoticsUI:
         subprocess.Popen(["camotics", filename])
 
     def makeCamoticsFile(self):
-        Path.Log.track()
+        logger.track()
         filename = QtGui.QFileDialog.getSaveFileName(
             self.form,
             translate("Path", "Save Project As"),
@@ -142,7 +138,7 @@ class CamoticsSimulation(QtCore.QObject):
     def worker(self, lock):
         while True:
             item = self.q.get()
-            Path.Log.debug("worker processing: {}".format(item))
+            logger.debug("worker processing: {}".format(item))
             with lock:
                 if item["TYPE"] == "STATUS":
                     self.statusChange.emit(item["VALUE"])
@@ -200,7 +196,7 @@ class CamoticsSimulation(QtCore.QObject):
             )
 
         postlist = PathPost.buildPostList(self.job)
-        Path.Log.track(postlist)
+        logger.track(postlist)
         # self.filenames = [PathPost.resolveFileName(self.job)]
 
         success = True
@@ -218,7 +214,7 @@ class CamoticsSimulation(QtCore.QObject):
                 extraargs="--no-show-editor",
             )
             self.filenames.append(name)
-            Path.Log.track(result, gcode, name)
+            logger.track(result, gcode, name)
 
             if result is None:
                 success = False
@@ -232,11 +228,11 @@ class CamoticsSimulation(QtCore.QObject):
         self.SIM.wait()
 
         tot = sum([step["time"] for step in self.SIM.get_path()])
-        Path.Log.debug("sim time: {}".format(tot))
+        logger.debug("sim time: {}".format(tot))
         self.taskForm.setRunTime(tot)
 
     def execute(self, timeIndex):
-        Path.Log.track()
+        logger.track()
         self.SIM.start(self.callback, time=timeIndex, done=self.isDone)
 
     def accept(self):
@@ -246,7 +242,7 @@ class CamoticsSimulation(QtCore.QObject):
         pass
 
     def buildproject(self):  # , files=[]):
-        Path.Log.track()
+        logger.track()
 
         job = self.job
 

@@ -46,11 +46,7 @@ LOGLEVEL = False
 
 LOG_MODULE = Path.Log.thisModule()
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 translate = FreeCAD.Qt.translate
@@ -127,12 +123,12 @@ class ObjectDressup:
                 zval = round(float(w[2]), 2)
 
                 pointlist.append([xval, yval, zval])
-            Path.Log.debug(pointlist)
+            logger.debug(pointlist)
 
             cols = list(zip(*pointlist))
-            Path.Log.debug("cols: {}".format(cols))
+            logger.debug("cols: {}".format(cols))
             yindex = list(sorted(set(cols[1])))
-            Path.Log.debug("yindex: {}".format(yindex))
+            logger.debug("yindex: {}".format(yindex))
 
             array = []
             for y in yindex:
@@ -170,8 +166,8 @@ class ObjectDressup:
                         currLocation = {"X": 0, "Y": 0, "Z": 0, "F": 0}
 
                         for c in pathlist:
-                            Path.Log.debug(c)
-                            Path.Log.debug("     curLoc:{}".format(currLocation))
+                            logger.debug(c)
+                            logger.debug("     curLoc:{}".format(currLocation))
                             newparams = dict(c.Parameters)
                             zval = newparams.get("Z", currLocation["Z"])
                             if c.Name in Path.Geom.CmdMoveMill:
@@ -254,12 +250,12 @@ class TaskPanel:
                     FreeCAD.ActiveDocument.removeObject(obj.Name)
             print("object name %s" % self.obj.Name)
             if hasattr(self.obj.Proxy, "shapes"):
-                Path.Log.info("showing shapes attribute")
+                logger.info("showing shapes attribute")
                 for shapes in self.obj.Proxy.shapes.itervalues():
                     for shape in shapes:
                         Part.show(shape)
             else:
-                Path.Log.info("no shapes attribute found")
+                logger.info("no shapes attribute found")
 
     def updateModel(self):
         self.getFields()

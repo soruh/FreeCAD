@@ -37,11 +37,7 @@ __doc__ = "Surface operation page controller and command implementation."
 
 translate = FreeCAD.Qt.translate
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class TaskPanelOpPage(PathOpGui.TaskPanelPage):

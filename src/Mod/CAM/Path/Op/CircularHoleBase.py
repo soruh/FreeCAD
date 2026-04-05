@@ -46,11 +46,7 @@ __doc__ = "Base class an implementation for operations on circular holes."
 translate = FreeCAD.Qt.translate
 
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class ObjectOp(PathOp.ObjectOp):
@@ -154,7 +150,7 @@ class ObjectOp(PathOp.ObjectOp):
 
             # for all other shapes the diameter is just the dimension in X.
             # This may be inaccurate as the BoundBox is calculated on the tessellated geometry
-            Path.Log.warning(
+            logger.warning(
                 translate(
                     "CAM",
                     "Hole diameter may be inaccurate due to tessellation on face. Consider selecting hole edge.",
@@ -162,7 +158,7 @@ class ObjectOp(PathOp.ObjectOp):
             )
             return shape.BoundBox.XLength
         except Part.OCCError as e:
-            Path.Log.error(e)
+            logger.error(e)
 
         return 0
 
@@ -187,9 +183,9 @@ class ObjectOp(PathOp.ObjectOp):
                         return FreeCAD.Vector(center.x, center.y, 0)
 
         except Part.OCCError as e:
-            Path.Log.error(e)
+            logger.error(e)
 
-        Path.Log.error(
+        logger.error(
             translate(
                 "CAM",
                 "Feature %s.%s cannot be processed as a circular hole - please remove from Base geometry list.",
@@ -207,7 +203,7 @@ class ObjectOp(PathOp.ObjectOp):
         """opExecute(obj) ... processes all Base features and Locations and collects
         them in a list of positions and radii which is then passed to circularHoleExecute(obj, holes).
         Do not overwrite, implement circularHoleExecute(obj, holes) instead."""
-        Path.Log.track()
+        logger.track()
 
         def haveLocations(self, obj):
             if PathOp.FeatureLocations & self.opFeatures(obj):
@@ -217,7 +213,7 @@ class ObjectOp(PathOp.ObjectOp):
         holes = []
         for base, subs in obj.Base:
             for sub in subs:
-                Path.Log.debug("processing {} in {}".format(sub, base.Name))
+                logger.debug("processing {} in {}".format(sub, base.Name))
                 if not self.isHoleEnabled(obj, base, sub):
                     continue
                 pos = self.holePosition(base, sub)
@@ -268,7 +264,7 @@ class ObjectOp(PathOp.ObjectOp):
     def findAllHoles(self, obj, selection=[]):
         """findAllHoles(obj) ...
         find all holes of all base or selected models and assign as features."""
-        Path.Log.track()
+        logger.track()
         job = self.getJob(obj)
         if not job:
             return

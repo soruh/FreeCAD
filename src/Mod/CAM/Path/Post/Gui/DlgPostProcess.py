@@ -37,11 +37,7 @@ from PySide import QtCore, QtGui
 translate = FreeCAD.Qt.translate
 
 debug = True
-if debug:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, debug)
 
 
 _TAB_OVERVIEW = 0
@@ -176,7 +172,7 @@ class PostProcessDialog:
                     dlg.comboBoxMachine.addItem(name, userData=full_path)
 
         except Exception as e:
-            Path.Log.warning(f"Could not enumerate machines: {e}")
+            logger.warning(f"Could not enumerate machines: {e}")
 
         current = getattr(self.job, "Machine", None)
         if current:
@@ -217,14 +213,14 @@ class PostProcessDialog:
 
             machine = MachineFactory.load_configuration(machine_path)
         except Exception as e:
-            Path.Log.warning(f"Could not load machine for output options: {e}")
+            logger.warning(f"Could not load machine for output options: {e}")
             self._rebuild_post_params_section(None)
             return
 
         try:
             from Machine.ui.editor.machine_editor import DataclassGUIGenerator
         except Exception as e:
-            Path.Log.warning(f"Could not import DataclassGUIGenerator: {e}")
+            logger.warning(f"Could not import DataclassGUIGenerator: {e}")
             self._rebuild_post_params_section(machine)
             return
 
@@ -286,7 +282,7 @@ class PostProcessDialog:
                     dc_instance, title
                 )
             except Exception as e:
-                Path.Log.warning(f"Could not build group for {attr_name}: {e}")
+                logger.warning(f"Could not build group for {attr_name}: {e}")
                 continue
             scroll_layout.insertWidget(insert_idx, group)
             self._dynamic_output_groups.append(group)
@@ -325,7 +321,7 @@ class PostProcessDialog:
                 if post_obj is not None:
                     post_class = type(post_obj)
             except Exception as e:
-                Path.Log.debug(f"Could not resolve postprocessor class for config: {e}")
+                logger.debug(f"Could not resolve postprocessor class for config: {e}")
 
         if post_class is None:
             return
@@ -343,7 +339,7 @@ class PostProcessDialog:
         bundle = {}
         if post_obj is not None and hasattr(post_obj, "build_configuration_bundle"):
             bundle = post_obj.build_configuration_bundle()
-            Path.Log.debug(f"Post config bundle for dialog: {bundle}")
+            logger.debug(f"Post config bundle for dialog: {bundle}")
 
         pp_props = bundle if bundle else (getattr(machine, "postprocessor_properties", {}) or {})
 
@@ -458,7 +454,7 @@ class PostProcessDialog:
                     if post_obj is not None:
                         post_class = type(post_obj)
                 except Exception as e:
-                    Path.Log.debug(f"Could not resolve postprocessor class: {e}")
+                    logger.debug(f"Could not resolve postprocessor class: {e}")
 
         if post_class is None:
             placeholder.setVisible(True)
@@ -468,7 +464,7 @@ class PostProcessDialog:
         try:
             schema = post_class.get_property_schema()
         except Exception as e:
-            Path.Log.warning(f"Could not get property schema: {e}")
+            logger.warning(f"Could not get property schema: {e}")
             placeholder.setVisible(True)
             return
 
@@ -656,7 +652,7 @@ class PostProcessDialog:
             overrides = self._get_dialog_overrides() if use_dialog_values else None
             all_squawks, critical_squawks = CAMSanity.validate_job(self.job, overrides=overrides)
         except Exception as e:
-            Path.Log.warning(f"Sanity check failed: {e}")
+            logger.warning(f"Sanity check failed: {e}")
             all_squawks = []
             critical_squawks = []
 
@@ -1148,7 +1144,7 @@ class PostProcessDialog:
                 translate("CAM_Post", "Generate Output"),
                 translate("CAM_Post", "Error during generation:\n{}").format(str(e)),
             )
-            Path.Log.error(f"Generate output failed: {e}")
+            logger.error(f"Generate output failed: {e}")
             return
 
         self._populate_output_tab()

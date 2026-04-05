@@ -27,6 +27,8 @@ import Path
 from ...assets import Asset, AssetUri
 from ...toolbit import ToolBit
 
+logger = Path.Log.getModuleLogger()
+
 
 class Library(Asset):
     asset_type: str = "toolbitlibrary"
@@ -91,7 +93,7 @@ class Library(Asset):
         library = cls(data_dict.get("label", id or "Unnamed Library"), id=id)
 
         if dependencies is None:
-            Path.Log.debug(
+            logger.debug(
                 f"Library.from_dict: Shallow load for library '{library.label}' (id: {id}). Tools not populated."
             )
             return library  # Only process tools if dependencies were resolved

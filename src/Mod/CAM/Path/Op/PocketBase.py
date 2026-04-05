@@ -34,11 +34,7 @@ __author__ = "sliptonic (Brad Collette)"
 __url__ = "https://www.freecad.org"
 __doc__ = "Base class and implementation for pocket operations."
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 translate = FreeCAD.Qt.translate
 
@@ -85,11 +81,11 @@ class ObjectPocket(PathAreaOp.ObjectOp):
         data = list()
         idx = 0 if dataType == "translated" else 1
 
-        Path.Log.debug(enums)
+        logger.debug(enums)
 
         for k, v in enumerate(enums):
             data.append((v, [tup[idx] for tup in enums[v]]))
-        Path.Log.debug(data)
+        logger.debug(data)
 
         return data
 
@@ -118,7 +114,7 @@ class ObjectPocket(PathAreaOp.ObjectOp):
     def initAreaOp(self, obj):
         """initAreaOp(obj) ... create pocket specific properties.
         Do not overwrite, implement initPocketOp(obj) instead."""
-        Path.Log.track()
+        logger.track()
 
         # Pocket Properties
         obj.addProperty(
@@ -221,7 +217,7 @@ class ObjectPocket(PathAreaOp.ObjectOp):
 
     def areaOpAreaParams(self, obj, isHole):
         """areaOpAreaParams(obj, isHole) ... return dictionary with pocket's area parameters"""
-        Path.Log.track()
+        logger.track()
         params = {}
         params["Fill"] = 0
         params["Coplanar"] = 0
@@ -311,7 +307,7 @@ class ObjectPocket(PathAreaOp.ObjectOp):
         if hasattr(obj, "PocketLastStepOver"):
             obj.removeProperty("PocketLastStepOver")
 
-        Path.Log.track()
+        logger.track()
 
     def areaOpPathParams(self, obj, isHole):
         """areaOpAreaParams(obj, isHole) ... return dictionary with pocket's path parameters"""

@@ -29,8 +29,7 @@ import Path.Main.Job as PathJob
 import Path.Tool.Controller as PathToolController
 import unittest
 
-PathCommand.LOG_MODULE = Path.Log.thisModule()
-Path.Log.setLevel(Path.Log.Level.INFO, PathCommand.LOG_MODULE)
+logger = Path.Log.getModuleLogger(withLevel=Path.Log.Level.INFO)
 
 
 class TestPathPostUtils(unittest.TestCase):

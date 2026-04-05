@@ -37,8 +37,7 @@ from Path.Post.Utils import FilenameGenerator
 
 from PySide.QtCore import QT_TRANSLATE_NOOP  # type: ignore
 
-Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-Path.Log.trackModule(Path.Log.thisModule())
+logger = Path.Log.getModuleLogger(withLevel=Path.Log.Level.DEBUG, enableTracking=True)
 
 
 class TestTestPost(PathTestUtils.PathTestBase):

@@ -34,11 +34,7 @@ __url__ = "https://www.freecad.org"
 __doc__ = "A collection of helper and utility functions for the CAM GUI."
 
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 def populateCombobox(form, enumTups, comboBoxesPropertyMap):
@@ -49,7 +45,7 @@ def populateCombobox(form, enumTups, comboBoxesPropertyMap):
         enumTups = list of (translated_text, data_string) tuples
         comboBoxesPropertyMap = list of (translated_text, data_string) tuples
     """
-    Path.Log.track(enumTups)
+    logger.track(enumTups)
 
     # Load appropriate enumerations in each combobox
     for cb, prop in comboBoxesPropertyMap:
@@ -69,7 +65,7 @@ def updateInputField(obj, prop, widget, onBeforeChange=None):
     Returns True if a new value was assigned, False otherwise (new value is the same as the current).
     """
     value = widget.property("rawValue")
-    Path.Log.track("value: {}".format(value))
+    logger.track("value: {}".format(value))
     attr = PathUtil.getProperty(obj, prop)
     attrValue = attr.Value if hasattr(attr, "Value") else attr
 
@@ -82,7 +78,7 @@ def updateInputField(obj, prop, widget, onBeforeChange=None):
             for prp, expr in obj.ExpressionEngine:
                 if prp == prop:
                     exprSet = True
-                    Path.Log.debug('prop = "expression": {} = "{}"'.format(prp, expr))
+                    logger.debug('prop = "expression": {} = "{}"'.format(prp, expr))
                     value = FreeCAD.Units.Quantity(obj.evalExpression(expr)).Value
                     if not Path.Geom.isRoughly(attrValue, value):
                         isDiff = True
@@ -100,7 +96,7 @@ def updateInputField(obj, prop, widget, onBeforeChange=None):
             widget.update()
 
     if isDiff:
-        Path.Log.debug("updateInputField(%s, %s): %.2f -> %.2f" % (obj.Label, prop, attr, value))
+        logger.debug("updateInputField(%s, %s): %.2f -> %.2f" % (obj.Label, prop, attr, value))
         if onBeforeChange:
             onBeforeChange(obj)
         PathUtil.setProperty(obj, prop, value)
@@ -121,7 +117,7 @@ class QuantitySpinBox(QtCore.QObject):
 
     def __init__(self, widget, obj, prop, onBeforeChange=None):
         super().__init__()
-        Path.Log.track(widget)
+        logger.track(widget)
         self.widget = widget
         self.onBeforeChange = onBeforeChange
         self.prop = None
@@ -167,7 +163,7 @@ class QuantitySpinBox(QtCore.QObject):
 
     def attachTo(self, obj, prop=None):
         """use an existing editor for the given object and property"""
-        Path.Log.track(self.prop, prop)
+        logger.track(self.prop, prop)
         self.obj = obj
         self.prop = prop
         if obj and prop:
@@ -178,21 +174,21 @@ class QuantitySpinBox(QtCore.QObject):
                 self.widget.setProperty("binding", "%s.%s" % (obj.Name, prop))
                 self.valid = True
             else:
-                Path.Log.warning("Cannot find property {} of {}".format(prop, obj.Label))
+                logger.warning("Cannot find property {} of {}".format(prop, obj.Label))
                 self.valid = False
         else:
             self.valid = False
 
     def expression(self):
         """returns the expression if one is bound to the property"""
-        Path.Log.track(self.prop, self.valid)
+        logger.track(self.prop, self.valid)
         if self.valid:
             return self.widget.property("expression")
         return ""
 
     def setMinimum(self, quantity):
         """set the minimum"""
-        Path.Log.track(self.prop, self.valid)
+        logger.track(self.prop, self.valid)
         if self.valid:
             value = quantity.Value if hasattr(quantity, "Value") else quantity
             self.widget.setProperty("setMinimum", value)
@@ -202,7 +198,7 @@ class QuantitySpinBox(QtCore.QObject):
         update the display value of the spin box.
         If no value is provided the value of the bound property is used.
         quantity can be of type Quantity or Float."""
-        Path.Log.track(self.prop, self.valid, quantity)
+        logger.track(self.prop, self.valid, quantity)
 
         if self.valid:
             expr = self._hasExpression()
@@ -227,7 +223,7 @@ class QuantitySpinBox(QtCore.QObject):
 
     def updateProperty(self):
         """updateProperty() ... update the bound property with the value from the spin box"""
-        Path.Log.track(self.prop, self.valid)
+        logger.track(self.prop, self.valid)
         if self.valid:
             return updateInputField(self.obj, self.prop, self.widget, self.onBeforeChange)
         return None
@@ -244,7 +240,7 @@ class PropertyComboBox(QtCore.QObject):
 
     def __init__(self, widget, obj, prop, onBeforeChange=None):
         super().__init__()
-        Path.Log.track(widget)
+        logger.track(widget)
         self.widget = widget
         self.onBeforeChange = onBeforeChange
         self.prop = None
@@ -255,7 +251,7 @@ class PropertyComboBox(QtCore.QObject):
 
     def attachTo(self, obj, prop=None):
         """use an existing editor for the given object and property"""
-        Path.Log.track(self.prop, prop)
+        logger.track(self.prop, prop)
         self.obj = obj
         self.prop = prop
         if obj and prop:
@@ -265,7 +261,7 @@ class PropertyComboBox(QtCore.QObject):
                 self._populateComboBox()
                 self.updateWidget()
             else:
-                Path.Log.warning("Cannot find property {} of {}".format(prop, obj.Label))
+                logger.warning("Cannot find property {} of {}".format(prop, obj.Label))
                 self.valid = False
         else:
             self.valid = False
@@ -276,7 +272,7 @@ class PropertyComboBox(QtCore.QObject):
 
     def updateWidget(self, value=None):
         """update the display value of the combo box."""
-        Path.Log.track(self.prop, self.valid, value)
+        logger.track(self.prop, self.valid, value)
         if self.valid:
             if value is None:
                 value = PathUtil.getProperty(self.obj, self.prop)
@@ -290,7 +286,7 @@ class PropertyComboBox(QtCore.QObject):
 
     def updateProperty(self):
         """update the bound property with the value from the combo box"""
-        Path.Log.track(self.prop, self.valid)
+        logger.track(self.prop, self.valid)
         if self.valid and self.prop:
             if self.onBeforeChange:
                 self.onBeforeChange()
@@ -343,10 +339,10 @@ class IntegerSpinBox(QtCore.QObject):
                     self.valid = True
                     self.updateWidget()
                 else:
-                    Path.Log.warning(f"Cannot get value for property {prop} of {obj.Label}")
+                    logger.warning(f"Cannot get value for property {prop} of {obj.Label}")
                     self.valid = False
             except Exception as e:
-                Path.Log.error(f"Error attaching to property {prop}: {str(e)}")
+                logger.error(f"Error attaching to property {prop}: {str(e)}")
                 self.valid = False
         else:
             self.valid = False
@@ -364,7 +360,7 @@ class IntegerSpinBox(QtCore.QObject):
 
                 self.widget.setValue(int(value))
             except Exception as e:
-                Path.Log.error(f"Error updating spin box: {str(e)}")
+                logger.error(f"Error updating spin box: {str(e)}")
 
     def updateProperty(self):
         """update the bound property with the spin box value"""
@@ -435,7 +431,7 @@ class PropertyLabel(QtCore.QObject):
                 self.valid = True
                 self.updateWidget()
             else:
-                Path.Log.warning(f"Cannot find property {prop} of {obj.Label}")
+                logger.warning(f"Cannot find property {prop} of {obj.Label}")
                 self.valid = False
         else:
             self.valid = False

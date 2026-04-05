@@ -30,8 +30,7 @@ import math
 
 from FreeCAD import Vector
 
-Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
-# Path.Log.trackModule(Path.Log.thisModule())
+logger = Path.Log.getModuleLogger(withLevel=Path.Log.Level.INFO, enableTracking=None)
 
 DOC = FreeCAD.getHomePath() + "Mod/CAM/CAMTests/test_geomop.fcstd"
 

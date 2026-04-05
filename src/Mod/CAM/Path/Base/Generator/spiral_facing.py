@@ -32,11 +32,7 @@ import FreeCAD
 import Path
 from . import facing_common
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 def generate_spiral_corners(
@@ -223,7 +219,7 @@ def spiral(
         number_of_intervals = math.ceil(total_radial_distance / stepover_dist)
         actual_stepover = total_radial_distance / number_of_intervals
 
-    Path.Log.debug(
+    logger.debug(
         f"Spiral: adjusted stepover {stepover_dist:.4f} → {actual_stepover:.4f} mm, intervals={number_of_intervals if total_radial_distance > 0 else 0}"
     )
 

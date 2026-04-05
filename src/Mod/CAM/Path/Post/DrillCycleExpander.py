@@ -33,11 +33,7 @@ EXPANDABLE_DRILL_CYCLES = {"G81", "G82", "G83", "G73"}
 
 
 debug = True
-if debug:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, debug)
 
 
 class DrillCycleExpander:
@@ -98,7 +94,7 @@ class DrillCycleExpander:
         # Handle drill cycles
         if cmd_name in ("G81", "G82", "G73", "G83"):
             result = self._expand_drill_cycle(command)
-            Path.Log.debug(f"Expanded drill cycle: {command} -> {result}")
+            logger.debug(f"Expanded drill cycle: {command} -> {result}")
             return result
 
         # Update position for non-drill commands
@@ -111,7 +107,7 @@ class DrillCycleExpander:
                         self.current_position[axis] += params[axis]
 
         # Pass through other commands unchanged
-        Path.Log.debug(f"Passing through command: {command}")
+        logger.debug(f"Passing through command: {command}")
         return [command]
 
     def _expand_drill_cycle(self, command: Path.Command) -> List[Path.Command]:

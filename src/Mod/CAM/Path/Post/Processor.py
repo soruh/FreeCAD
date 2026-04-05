@@ -50,14 +50,8 @@ from Machine.models.machine import (
 
 translate = FreeCAD.Qt.translate
 
-Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
-
 debug = False
-if debug:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, debug)
 
 
 class _HeaderBuilder:
@@ -221,7 +215,7 @@ class PostProcessorFactory:
     @staticmethod
     def get_post_processor(job, postname):
         # Log initial debug message
-        Path.Log.debug("PostProcessorFactory.get_post_processor()")
+        logger.debug("PostProcessorFactory.get_post_processor()")
 
         # Posts have to be in a place we can find them
         paths = Path.Preferences.searchPathsPost()
@@ -229,9 +223,9 @@ class PostProcessorFactory:
 
         module_name = f"{postname}_post"
         class_name = postname.title()
-        Path.Log.debug(f"PostProcessorFactory.get_post_processor() - postname: {postname}")
-        Path.Log.debug(f"PostProcessorFactory.get_post_processor() - module_name: {module_name}")
-        Path.Log.debug(f"PostProcessorFactory.get_post_processor() - class_name: {class_name}")
+        logger.debug(f"PostProcessorFactory.get_post_processor() - postname: {postname}")
+        logger.debug(f"PostProcessorFactory.get_post_processor() - module_name: {module_name}")
+        logger.debug(f"PostProcessorFactory.get_post_processor() - class_name: {class_name}")
 
         # Iterate all the paths to find the module
         for path in paths:
@@ -242,29 +236,29 @@ class PostProcessorFactory:
                 module = importlib.util.module_from_spec(spec)
                 try:
                     spec.loader.exec_module(module)
-                    Path.Log.debug(f"found module {module_name} at {module_path}")
+                    logger.debug(f"found module {module_name} at {module_path}")
 
                 except (FileNotFoundError, ImportError, ModuleNotFoundError) as e:
-                    Path.Log.debug(f"Failed to load {module_path}: {e}")
+                    logger.debug(f"Failed to load {module_path}: {e}")
                     continue
 
                 try:
                     PostClass = getattr(module, class_name)
-                    Path.Log.debug(f"Found class {class_name} in module {module_name}")
+                    logger.debug(f"Found class {class_name} in module {module_name}")
                     return PostClass(job)
                 except AttributeError:
                     # Return an instance of WrapperPost if no valid module is found
-                    Path.Log.debug(f"Post processor {postname} is a script")
+                    logger.debug(f"Post processor {postname} is a script")
                     return WrapperPost(job, module_path, module_name)
                 except Exception as e:
                     # Log any other exception during instantiation
-                    Path.Log.debug(f"Error instantiating {class_name}: {e}")
+                    logger.debug(f"Error instantiating {class_name}: {e}")
                     # If job is None (filtering context), try to return the class itself
                     # so the machine editor can check its schema methods
                     if job is None:
                         try:
                             PostClass = getattr(module, class_name)
-                            Path.Log.debug(
+                            logger.debug(
                                 f"Returning uninstantiated class {class_name} for schema inspection"
                             )
                             # Return a mock instance that can be used for schema inspection
@@ -273,7 +267,7 @@ class PostProcessorFactory:
                             pass
                     raise
 
-        Path.Log.warning(
+        logger.warning(
             f"Post processor '{postname}' not found in any search path. "
             f"Searched for '{module_name}.py' in {len(paths)} paths."
         )
@@ -493,7 +487,7 @@ class PostProcessor:
                 machine = MachineFactory.get_machine(self._job.Machine)
                 if machine is None:
                     # Machine not found in factory - allow manual assignment later
-                    Path.Log.warning(
+                    logger.warning(
                         f"Machine '{self._job.Machine}' not found in factory. Machine can be set manually."
                     )
                     self._machine = None
@@ -501,7 +495,7 @@ class PostProcessor:
                     self._machine = machine
             except FileNotFoundError as e:
                 # Machine not found in factory - allow manual assignment later (e.g., in tests)
-                Path.Log.warning(
+                logger.warning(
                     f"Machine '{self._job.Machine}' not found: {e}. Machine can be set manually."
                 )
                 self._machine = None
@@ -633,15 +627,15 @@ class PostProcessor:
                 self.values["OUTPUT_COMMENTS"] = comments.enabled
             if hasattr(comments, "symbol"):
                 self.values["COMMENT_SYMBOL"] = comments.symbol
-                Path.Log.debug(f"Set COMMENT_SYMBOL to: {comments.symbol}")
+                logger.debug(f"Set COMMENT_SYMBOL to: {comments.symbol}")
             if hasattr(comments, "include_operation_labels"):
                 self.values["OUTPUT_OPERATION_LABELS"] = comments.include_operation_labels
             if hasattr(comments, "include_blank_lines"):
                 self.values["OUTPUT_BLANK_LINES"] = comments.include_blank_lines
             if hasattr(comments, "output_bcnc_comments"):
-                Path.Log.debug(f"Found output_bcnc_comments: {comments.output_bcnc_comments}")
+                logger.debug(f"Found output_bcnc_comments: {comments.output_bcnc_comments}")
                 self.values["OUTPUT_BCNC"] = comments.output_bcnc_comments
-                Path.Log.debug(f"Set OUTPUT_BCNC to: {self.values['OUTPUT_BCNC']}")
+                logger.debug(f"Set OUTPUT_BCNC to: {self.values['OUTPUT_BCNC']}")
 
         # Formatting options
         if hasattr(output_options, "formatting"):
@@ -662,35 +656,35 @@ class PostProcessor:
         # Precision options
         if hasattr(output_options, "precision"):
             precision = output_options.precision
-            Path.Log.debug(
+            logger.debug(
                 f"Loading precision from machine config - axis: {getattr(precision, 'axis', 'N/A')}, feed: {getattr(precision, 'feed', 'N/A')}, spindle: {getattr(precision, 'spindle', 'N/A')}"
             )
             if hasattr(precision, "axis") and precision.axis is not None:
                 if isinstance(precision.axis, (int, float)) and precision.axis >= 0:
                     self.values["AXIS_PRECISION"] = int(precision.axis)
-                    Path.Log.debug(f"Set AXIS_PRECISION to: {precision.axis}")
+                    logger.debug(f"Set AXIS_PRECISION to: {precision.axis}")
                 else:
-                    Path.Log.warning(
+                    logger.warning(
                         f"Invalid axis precision value: {precision.axis}. Must be non-negative. Using default."
                     )
             if hasattr(precision, "feed") and precision.feed is not None:
                 if isinstance(precision.feed, (int, float)) and precision.feed >= 0:
                     self.values["FEED_PRECISION"] = int(precision.feed)
-                    Path.Log.debug(f"Set FEED_PRECISION to: {precision.feed}")
+                    logger.debug(f"Set FEED_PRECISION to: {precision.feed}")
                 else:
-                    Path.Log.warning(
+                    logger.warning(
                         f"Invalid feed precision value: {precision.feed}. Must be non-negative. Using default."
                     )
             if hasattr(precision, "spindle") and precision.spindle is not None:
                 if isinstance(precision.spindle, (int, float)) and precision.spindle >= 0:
                     self.values["SPINDLE_DECIMALS"] = int(precision.spindle)
-                    Path.Log.debug(f"Set SPINDLE_DECIMALS to: {precision.spindle}")
+                    logger.debug(f"Set SPINDLE_DECIMALS to: {precision.spindle}")
                 else:
-                    Path.Log.warning(
+                    logger.warning(
                         f"Invalid spindle precision value: {precision.spindle}. Must be non-negative. Using default."
                     )
 
-        Path.Log.debug(
+        logger.debug(
             f"Final precision values - AXIS_PRECISION: {self.values.get('AXIS_PRECISION')}, FEED_PRECISION: {self.values.get('FEED_PRECISION')}, SPINDLE_DECIMALS: {self.values.get('SPINDLE_DECIMALS')}"
         )
 
@@ -725,7 +719,7 @@ class PostProcessor:
             if name and name not in self._machine.postprocessor_properties:
                 default = prop.get("default", "")
                 self._machine.postprocessor_properties[name] = default
-                Path.Log.debug(f"Schema default applied: {name} = {repr(default)}")
+                logger.debug(f"Schema default applied: {name} = {repr(default)}")
 
     def build_configuration_bundle(self, overrides=None):
         """Build the complete postprocessor configuration as a flat dict.
@@ -778,7 +772,7 @@ class PostProcessor:
             if key in bundle:
                 bundle[key] = value
             else:
-                Path.Log.warning(f"override key '{key}' not in bundle, ignoring")
+                logger.warning(f"override key '{key}' not in bundle, ignoring")
 
         return bundle
 
@@ -808,7 +802,7 @@ class PostProcessor:
         for key, value in bundle.items():
             self.values[key.upper()] = value
 
-        Path.Log.debug(f"Configuration bundle applied — " f"bundle: {bundle}")
+        logger.debug(f"Configuration bundle applied — " f"bundle: {bundle}")
 
     # ------------------------------------------------------------------
     # Bundle helpers
@@ -826,11 +820,11 @@ class PostProcessor:
         try:
             overrides = json.loads(overrides_str)
         except (json.JSONDecodeError, TypeError) as e:
-            Path.Log.warning(f"Invalid PostProcessorPropertyOverrides JSON: {e}")
+            logger.warning(f"Invalid PostProcessorPropertyOverrides JSON: {e}")
             return {}
 
         if not isinstance(overrides, dict):
-            Path.Log.warning("PostProcessorPropertyOverrides is not a dict, ignoring")
+            logger.warning("PostProcessorPropertyOverrides is not a dict, ignoring")
             return {}
 
         return overrides
@@ -952,7 +946,7 @@ class PostProcessor:
 
         Subclasses can override to customize canned cycle handling.
         """
-        Path.Log.track("Expanding canned cycles")
+        logger.track("Expanding canned cycles")
         for section_name, sublist in postables:
             for item in sublist:
                 has_drill_cycles = False
@@ -1067,7 +1061,7 @@ class PostProcessor:
             for item in sublist:
                 if item.path:
                     new_commands = []
-                    Path.Log.debug(f"Translating rapid moves for {item.label}")
+                    logger.debug(f"Translating rapid moves for {item.label}")
                     for cmd in item.path.Commands:
                         if cmd.Name in Constants.GCODE_MOVE_RAPID:
                             cmd.Name = "G1"
@@ -1083,27 +1077,27 @@ class PostProcessor:
 
         Subclasses can override to customize drill cycle translation.
         """
-        Path.Log.track("Translating drill cycles")
+        logger.track("Translating drill cycles")
         if not (
             self._machine
             and hasattr(self._machine, "processing")
             and self._machine.processing.translate_drill_cycles
         ):
-            Path.Log.debug("Drill cycle translation disabled")
+            logger.debug("Drill cycle translation disabled")
             return
 
         from Path.Post.DrillCycleExpander import DrillCycleExpander
 
         for section_name, sublist in postables:
             for item in sublist:
-                Path.Log.track(f"Processing item: {item.label}")
+                logger.track(f"Processing item: {item.label}")
                 if item.path:
                     has_drill = any(
                         cmd.Name in DrillCycleExpander.EXPANDABLE_CYCLES
                         for cmd in item.path.Commands
                     )
                     if has_drill:
-                        Path.Log.debug(f"Translating drill cycles for {item.label}")
+                        logger.debug(f"Translating drill cycles for {item.label}")
                         expander = DrillCycleExpander()
                         item.path = expander.expand_path(item.path)
 
@@ -1124,7 +1118,7 @@ class PostProcessor:
         ):
             return
 
-        Path.Log.debug("Processing XY before Z after tool change")
+        logger.debug("Processing XY before Z after tool change")
         for section_name, sublist in postables:
             # Track whether we just saw a tool change
             tool_change_seen = False
@@ -1132,7 +1126,7 @@ class PostProcessor:
             for item in sublist:
                 if item.item_type == "tool_controller":
                     tool_change_seen = True
-                    Path.Log.debug(f"Tool change detected: T{item.data['tool_number']}")
+                    logger.debug(f"Tool change detected: T{item.data['tool_number']}")
                     continue
 
                 if item.path:
@@ -1145,7 +1139,7 @@ class PostProcessor:
                             new_commands.append(cmd)
                             tool_change_seen = True
                             first_move_processed = False
-                            Path.Log.debug("M6 tool change detected in operation")
+                            logger.debug("M6 tool change detected in operation")
                             continue
 
                         # Check if this is the first move after tool change
@@ -1159,7 +1153,7 @@ class PostProcessor:
                             has_z = "Z" in cmd.Parameters
 
                             if has_xy and has_z:
-                                Path.Log.debug(
+                                logger.debug(
                                     f"Decomposing first move after tool change: {cmd.Name}"
                                 )
 
@@ -1172,7 +1166,7 @@ class PostProcessor:
                                 if xy_params:
                                     xy_cmd = Path.Command(cmd.Name, xy_params)
                                     new_commands.append(xy_cmd)
-                                    Path.Log.debug(f"  XY move: {cmd.Name} {xy_params}")
+                                    logger.debug(f"  XY move: {cmd.Name} {xy_params}")
 
                                 # Create Z-only move (second)
                                 z_params = {"Z": cmd.Parameters["Z"]}
@@ -1183,7 +1177,7 @@ class PostProcessor:
 
                                 z_cmd = Path.Command(cmd.Name, z_params)
                                 new_commands.append(z_cmd)
-                                Path.Log.debug(f"  Z move: {cmd.Name} {z_params}")
+                                logger.debug(f"  Z move: {cmd.Name} {z_params}")
 
                                 first_move_processed = True
                                 tool_change_seen = False  # Reset after decomposing the move
@@ -1199,7 +1193,7 @@ class PostProcessor:
 
                     if len(new_commands) != len(item.path.Commands):
                         item.path = Path.Path(new_commands)
-                        Path.Log.debug(f"Updated path for {item.label}")
+                        logger.debug(f"Updated path for {item.label}")
 
     def _expand_bcnc_commands(self, postables):
         """Inject or remove bCNC block annotation commands.
@@ -1213,12 +1207,12 @@ class PostProcessor:
         Subclasses can override to customize bCNC command handling.
         """
         output_bcnc = self.values.get("OUTPUT_BCNC", False)
-        Path.Log.debug(f"OUTPUT_BCNC value: {output_bcnc}")
+        logger.debug(f"OUTPUT_BCNC value: {output_bcnc}")
         # Clear any existing bCNC postamble commands to avoid state leakage
         self._bcnc_postamble_commands = None
 
         if output_bcnc:
-            Path.Log.debug("Creating bCNC commands")
+            logger.debug("Creating bCNC commands")
             # Create bCNC postamble commands
             bcnc_postamble_start_cmd = Path.Command("(Block-name: post_amble)")
             bcnc_postamble_start_cmd.Annotations = {"bcnc": "postamble_start"}
@@ -1254,7 +1248,7 @@ class PostProcessor:
                             new_commands.extend(original_commands)
                             item.path = Path.Path(new_commands)
         else:
-            Path.Log.debug("Removing existing bCNC commands")
+            logger.debug("Removing existing bCNC commands")
             for section_name, sublist in postables:
                 for item in sublist:
                     if item.item_type == "operation" and item.path:
@@ -1282,7 +1276,7 @@ class PostProcessor:
         Simplified single-pass implementation.
         """
         output_tool_length_offset = self.values.get("OUTPUT_TOOL_LENGTH_OFFSET", True)
-        Path.Log.debug(f"OUTPUT_TOOL_LENGTH_OFFSET value: {output_tool_length_offset}")
+        logger.debug(f"OUTPUT_TOOL_LENGTH_OFFSET value: {output_tool_length_offset}")
 
         # Clear tracking dictionaries
         self._tool_change_g43_commands = {}
@@ -1291,10 +1285,10 @@ class PostProcessor:
         if not output_tool_length_offset:
             return
 
-        Path.Log.debug("Creating G43 tool length offset commands")
+        logger.debug("Creating G43 tool length offset commands")
         for section_name, sublist in postables:
             for item in sublist:
-                Path.Log.debug(f"Processing item: {item.item_type}")
+                logger.debug(f"Processing item: {item.item_type}")
                 if item.item_type == "tool_controller" and item.path:
                     commands_with_g43 = []
                     for cmd in item.path.Commands:
@@ -1304,7 +1298,7 @@ class PostProcessor:
                             g43_cmd = Path.Command("G43", {"H": tool_num})
                             g43_cmd.Annotations = {"tool_length_offset": True}
                             commands_with_g43.append(g43_cmd)
-                            Path.Log.debug(
+                            logger.debug(
                                 f"Added G43 H{tool_num} after M6 in operation {item.label}"
                             )
 
@@ -1455,7 +1449,7 @@ class PostProcessor:
                     gcode_lines.append(gcode)
 
             except (ValueError, AttributeError) as e:
-                Path.Log.debug(f"Skipping command {cmd.Name}: {e}")
+                logger.debug(f"Skipping command {cmd.Name}: {e}")
 
         if in_rotary_group:
             gcode_lines.extend(self._get_property_lines("post_rotary_move"))
@@ -1556,7 +1550,7 @@ class PostProcessor:
             and hasattr(self, "_bcnc_postamble_commands")
             and self._bcnc_postamble_commands is not None
         ):
-            Path.Log.debug(
+            logger.debug(
                 f"Processing {len(self._bcnc_postamble_commands)}" " bCNC postamble commands"
             )
             bcnc_lines = []
@@ -1579,7 +1573,7 @@ class PostProcessor:
                         last_gcode + line_ending + bcnc_gcode.replace("\n", line_ending),
                     )
         else:
-            Path.Log.debug("No bCNC postamble commands to process")
+            logger.debug("No bCNC postamble commands to process")
 
     def _prepend_safety_block(self, all_job_sections) -> None:
         """Prepend safetyblock to the first section if configured."""
@@ -1616,11 +1610,11 @@ class PostProcessor:
         5. Output Production - Assemble final structure
         6. Remote Posting - Post-processing network operations
         """
-        Path.Log.debug("Starting export2()")
+        logger.debug("Starting export2()")
 
         # ===== STAGE 0: PRE-PROCESSING DIALOG =====
         if not self.pre_processing_dialog():
-            Path.Log.info("Pre-processing dialog cancelled - aborting export")
+            logger.info("Pre-processing dialog cancelled - aborting export")
             return None
 
         if not getattr(self, "_bundle_applied", False):
@@ -1643,7 +1637,7 @@ class PostProcessor:
         self._expand_bcnc_commands(postables)
         self._expand_tool_length_offset(postables)
 
-        Path.Log.debug(postables)
+        logger.debug(postables)
 
         # ===== STAGE 3: COMMAND CONVERSION =====
         header_lines = self._collect_header_lines(gcodeheader)
@@ -1675,14 +1669,14 @@ class PostProcessor:
         # ===== STAGE 5: OUTPUT PRODUCTION =====
         self._prepend_safety_block(all_job_sections)
 
-        Path.Log.debug(f"Returning {len(all_job_sections)} sections")
-        Path.Log.debug(f"Sections: {all_job_sections}")
+        logger.debug(f"Returning {len(all_job_sections)} sections")
+        logger.debug(f"Sections: {all_job_sections}")
 
         # ===== STAGE 6: REMOTE POSTING =====
         try:
             self.remote_post(all_job_sections)
         except Exception as e:
-            Path.Log.error(f"Remote posting failed: {e}")
+            logger.error(f"Remote posting failed: {e}")
 
         return all_job_sections
 
@@ -1691,7 +1685,7 @@ class PostProcessor:
         args: ParserArgs
         flag: bool
 
-        Path.Log.debug("Exporting the job")
+        logger.debug("Exporting the job")
 
         flag, args = self.process_arguments()
         #
@@ -1805,9 +1799,9 @@ class PostProcessor:
         sublist: Sublist
 
         postables = self._buildPostList()
-        Path.Log.debug(f"postables {postables}")
+        logger.debug(f"postables {postables}")
 
-        Path.Log.debug(f"postables count: {len(postables)}")
+        logger.debug(f"postables count: {len(postables)}")
 
         g_code_sections = []
         for _, section in enumerate(postables):
@@ -1885,7 +1879,7 @@ class PostProcessor:
             bool: True to continue with post-processing, False to cancel
         """
         if getattr(self, "_dialog_handled", False):
-            Path.Log.debug("pre_processing_dialog skipped (handled by unified dialog)")
+            logger.debug("pre_processing_dialog skipped (handled by unified dialog)")
             return True
         return True
 
@@ -2104,9 +2098,7 @@ class PostProcessor:
             # Replace any remaining parentheses with square brackets
             comment_text = comment_text.replace("(", "[").replace(")", "]")
 
-        Path.Log.debug(
-            f"Formatting comment with symbol: '{comment_symbol}', text: '{comment_text}'"
-        )
+        logger.debug(f"Formatting comment with symbol: '{comment_symbol}', text: '{comment_text}'")
         if comment_symbol == "(":
             return f"{block_delete_string}({comment_text})"
         else:
@@ -2370,7 +2362,7 @@ class WrapperPost(PostProcessor):
         super().__init__(job, tooltip=None, tooltipargs=None, units=None, *args, **kwargs)
         self.script_path = script_path
         self.module_name = module_name
-        Path.Log.debug(f"WrapperPost.__init__({script_path})")
+        logger.debug(f"WrapperPost.__init__({script_path})")
         self.load_script()
 
     def load_script(self):
@@ -2394,14 +2386,14 @@ class WrapperPost(PostProcessor):
         """Dynamically reload the module for the export to ensure up-to-date usage."""
 
         postables = self._buildPostList()
-        Path.Log.debug(f"postables count: {len(postables)}")
+        logger.debug(f"postables count: {len(postables)}")
 
         g_code_sections = []
         for idx, section in enumerate(postables):
             partname, sublist = section
 
             gcode = self.script_module.export(sublist, "-", self._job.PostProcessorArgs)
-            Path.Log.debug(f"Exported {partname}")
+            logger.debug(f"Exported {partname}")
             g_code_sections.append((partname, gcode))
         return g_code_sections
 

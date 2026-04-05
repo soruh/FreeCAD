@@ -42,11 +42,7 @@ __url__ = "https://www.freecad.org"
 __doc__ = "Deburr operation."
 
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 translate = FreeCAD.Qt.translate
 
@@ -118,7 +114,7 @@ class ObjectDeburr(PathEngraveBase.ObjectOp):
         )
 
     def initOperation(self, obj):
-        Path.Log.track(obj.Label)
+        logger.track(obj.Label)
         obj.addProperty(
             "App::PropertyDistance",
             "Width",
@@ -194,12 +190,12 @@ class ObjectDeburr(PathEngraveBase.ObjectOp):
         data = list()
         idx = 0 if dataType == "translated" else 1
 
-        Path.Log.debug(enums)
+        logger.debug(enums)
 
         for k, v in enumerate(enums):
             # data[k] = [tup[idx] for tup in v]
             data.append((v, [tup[idx] for tup in enums[v]]))
-        Path.Log.debug(data)
+        logger.debug(data)
 
         return data
 
@@ -207,7 +203,7 @@ class ObjectDeburr(PathEngraveBase.ObjectOp):
         obj.setEditorMode("Join", 2)  # hide for now
 
     def opExecute(self, obj):
-        Path.Log.track(obj.Label)
+        logger.track(obj.Label)
 
         if not obj.Base:
             return
@@ -225,7 +221,7 @@ class ObjectDeburr(PathEngraveBase.ObjectOp):
             # QtGui.QMessageBox.information(None, "Tool Error", msg)
             # return
 
-        Path.Log.track(obj.Label, depth, offset)
+        logger.track(obj.Label, depth, offset)
 
         self.basewires = []
         self.adjusted_basewires = []
@@ -401,7 +397,7 @@ class ObjectDeburr(PathEngraveBase.ObjectOp):
                 zValues.append(z)
 
         zValues.append(depth)
-        Path.Log.track(obj.Label, depth, zValues)
+        logger.track(obj.Label, depth, zValues)
 
         if obj.EntryPoint < 0:
             obj.EntryPoint = 0
@@ -414,7 +410,7 @@ class ObjectDeburr(PathEngraveBase.ObjectOp):
         return base not in self.model
 
     def opSetDefaultValues(self, obj, job):
-        Path.Log.track(obj.Label, job.Label)
+        logger.track(obj.Label, job.Label)
         obj.Width = "1 mm"
         obj.ExtraDepth = "0.5 mm"
         obj.Join = "Round"

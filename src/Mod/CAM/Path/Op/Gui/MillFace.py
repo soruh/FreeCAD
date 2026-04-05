@@ -35,18 +35,14 @@ __author__ = "sliptonic (Brad Collette)"
 __url__ = "https://www.freecad.org"
 __doc__ = "Face Mill operation page controller and command implementation."
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class TaskPanelOpPage(PathPocketBaseGui.TaskPanelOpPage):
     """Page controller class for the face milling operation."""
 
     def getForm(self):
-        Path.Log.track()
+        logger.track()
         """getForm() ... return UI"""
 
         form = FreeCADGui.PySideUic.loadUi(":/panels/PageOpPocketFullEdit.ui")

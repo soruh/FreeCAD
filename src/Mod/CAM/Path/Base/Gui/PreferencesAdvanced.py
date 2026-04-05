@@ -23,11 +23,7 @@
 import FreeCADGui
 import Path
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class AdvancedPreferencesPage:
@@ -51,7 +47,7 @@ class AdvancedPreferencesPage:
         )
 
     def loadSettings(self):
-        Path.Log.track()
+        logger.track()
         self.form.WarningSuppressAllSpeeds.setChecked(Path.Preferences.suppressAllSpeedsWarning())
         self.form.WarningSuppressRapidSpeeds.setChecked(
             Path.Preferences.suppressRapidSpeedsWarning(False)

@@ -30,11 +30,7 @@ import Path
 import Path.Base.Drillable as Drillable
 import math
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class PathBaseGate(object):
@@ -126,7 +122,7 @@ class CHAMFERGate(PathBaseGate):
 
 class DRILLGate(PathBaseGate):
     def allow(self, doc, obj, sub):
-        Path.Log.debug("obj: {} sub: {}".format(obj, sub))
+        logger.debug("obj: {} sub: {}".format(obj, sub))
         if not hasattr(obj, "Shape"):
             return False
         shape = obj.Shape
@@ -138,7 +134,7 @@ class DRILLGate(PathBaseGate):
 
 class TAPGate(PathBaseGate):
     def allow(self, doc, obj, sub):
-        Path.Log.debug("obj: {} sub: {}".format(obj, sub))
+        logger.debug("obj: {} sub: {}".format(obj, sub))
         if not hasattr(obj, "Shape"):
             return False
         shape = obj.Shape
@@ -248,7 +244,7 @@ class PROBEGate:
 
 class TURNGate(PathBaseGate):
     def allow(self, doc, obj, sub):
-        Path.Log.debug("obj: {} sub: {}".format(obj, sub))
+        logger.debug("obj: {} sub: {}".format(obj, sub))
         if hasattr(obj, "Shape") and sub:
             shape = obj.Shape
             subobj = shape.getElement(sub)

@@ -52,11 +52,7 @@ from ..models import Library
 from .browser import LibraryBrowserWidget
 from .properties import LibraryPropertyDialog
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.ERROR, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.ERROR, False)
 
 
 _LibraryRole = Qt.UserRole + 1
@@ -69,7 +65,7 @@ class LibraryEditor(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
-        Path.Log.track()
+        logger.track()
         ensure_assets_initialized(cam_assets)
         self.form = FreeCADGui.PySideUic.loadUi(":/panels/ToolBitLibraryEdit.ui")
         self.form.installEventFilter(self)  # to forward keypress events
@@ -123,11 +119,11 @@ class LibraryEditor(QWidget):
     def eventFilter(self, obj, event):
         if event.type() == QEvent.KeyPress and self.form.TableList.hasFocus():
             if event.key() == Qt.Key_F2:
-                Path.Log.debug("F2 pressed on library list.")
+                logger.debug("F2 pressed on library list.")
                 self._on_rename_library_requested()
                 return True
             elif event.key() == Qt.Key_Delete:
-                Path.Log.debug("Del pressed on library list.")
+                logger.debug("Del pressed on library list.")
                 self._on_remove_library_requested()
                 return True
         if obj == self.form.TableList.viewport():
@@ -143,9 +139,9 @@ class LibraryEditor(QWidget):
     def _handle_drag_enter(self, event):
         """Handle drag enter and move events for the library list."""
         mime_data = event.mimeData()
-        Path.Log.debug(f"_handle_drag_enter: MIME formats: {mime_data.formats()}")
+        logger.debug(f"_handle_drag_enter: MIME formats: {mime_data.formats()}")
         if not mime_data.hasFormat(ToolBitUriListMimeType):
-            Path.Log.debug("_handle_drag_enter: Invalid MIME type, ignoring")
+            logger.debug("_handle_drag_enter: Invalid MIME type, ignoring")
             return True
 
         # Get the row being hovered.
@@ -219,7 +215,7 @@ class LibraryEditor(QWidget):
                             if current_library and current_library.get_id() != "all_tools":
                                 current_library.remove_bit(toolbit)
                 except Exception as e:
-                    Path.Log.error(f"Failed to load toolbit from URI {uri}: {e}")
+                    logger.error(f"Failed to load toolbit from URI {uri}: {e}")
                     continue
 
             if new_uris:
@@ -233,7 +229,7 @@ class LibraryEditor(QWidget):
 
             event.acceptProposedAction()
         except Exception as e:
-            Path.Log.error(f"Failed to process drop event: {e}")
+            logger.error(f"Failed to process drop event: {e}")
             event.ignore()
         return True
 
@@ -279,12 +275,12 @@ class LibraryEditor(QWidget):
             self.select_library_by_uri(uri)
 
     def open(self):
-        Path.Log.track()
+        logger.track()
         return self.form.exec_()
 
     def _refresh_library_list(self):
         """Clears and repopulates the self.listModel with available libraries."""
-        Path.Log.track()
+        logger.track()
         self.listModel.clear()
 
         # Add "All Toolbits" item
@@ -305,7 +301,7 @@ class LibraryEditor(QWidget):
             # The 'fetch' method returns actual Asset objects.
             libraries = cast(List[Library], cam_assets.fetch(asset_type="toolbitlibrary", depth=0))
         except Exception as e:
-            Path.Log.error(f"Failed to fetch toolbit libraries: {e}")
+            logger.error(f"Failed to fetch toolbit libraries: {e}")
             return
 
         # Sort by label for consistent ordering, falling back to asset_id if label is missing
@@ -320,13 +316,13 @@ class LibraryEditor(QWidget):
             libItem.setIcon(QPixmap(":/icons/CAM_ToolTable.svg"))
             self.listModel.appendRow(libItem)
 
-        Path.Log.debug("model rows: {}".format(self.listModel.rowCount()))
+        logger.debug("model rows: {}".format(self.listModel.rowCount()))
 
         self.listModel.setHorizontalHeaderLabels(["Library"])
 
     def _on_library_selected(self):
         """Sets the current library in the browser when a library is selected."""
-        Path.Log.debug("_on_library_selected: Called.")
+        logger.debug("_on_library_selected: Called.")
         index = self.form.TableList.currentIndex()
         item = self.listModel.itemFromIndex(index)
         if not item:
@@ -363,7 +359,7 @@ class LibraryEditor(QWidget):
 
     def _save_library(self):
         """Internal method to save the current tool library asset"""
-        Path.Log.track()
+        logger.track()
         library = self.browser.get_current_library()
         if not library:
             return
@@ -371,9 +367,9 @@ class LibraryEditor(QWidget):
         # Save the modified library asset.
         try:
             cam_assets.add(library)
-            Path.Log.debug(f"Library {library.get_uri()} saved")
+            logger.debug(f"Library {library.get_uri()} saved")
         except Exception as e:
-            Path.Log.error(f"Failed to save library {library.get_uri()}: {e}")
+            logger.error(f"Failed to save library {library.get_uri()}: {e}")
             QMessageBox.critical(
                 self.form,
                 translate("CAM_ToolBit", "Error Saving Library"),
@@ -382,21 +378,21 @@ class LibraryEditor(QWidget):
             raise
 
     def _on_add_library_requested(self):
-        Path.Log.debug("_on_add_library_requested: Called.")
+        logger.debug("_on_add_library_requested: Called.")
         new_library = Library(FreeCAD.Qt.translate("CAM", "New Library"))
         dialog = LibraryPropertyDialog(new_library, new=True, parent=self)
         if dialog.exec_() != QDialog.Accepted:
             return
 
         uri = cam_assets.add(new_library)
-        Path.Log.debug(f"_on_add_library_requested: New library URI = {uri}")
+        logger.debug(f"_on_add_library_requested: New library URI = {uri}")
         self._refresh_library_list()
         self.select_library_by_uri(uri)
         self._update_button_states()
 
     def _on_remove_library_requested(self):
         """Handles request to remove the selected library."""
-        Path.Log.debug("_on_remove_library_requested: Called.")
+        logger.debug("_on_remove_library_requested: Called.")
         current_library = self.browser.get_current_library()
         if not current_library:
             return
@@ -419,12 +415,12 @@ class LibraryEditor(QWidget):
         try:
             library_uri = current_library.get_uri()
             cam_assets.delete(library_uri)
-            Path.Log.info(f"Library {current_library.label} deleted.")
+            logger.info(f"Library {current_library.label} deleted.")
             self._refresh_library_list()
             self.browser.refresh()
             self._update_button_states()
         except FileNotFoundError as e:
-            Path.Log.error(f"Failed to delete library {current_library.label}: {e}")
+            logger.error(f"Failed to delete library {current_library.label}: {e}")
             QMessageBox.critical(
                 self,
                 FreeCAD.Qt.translate("CAM", "Error"),
@@ -435,7 +431,7 @@ class LibraryEditor(QWidget):
 
     def _on_rename_library_requested(self):
         """Handles request to rename the selected library."""
-        Path.Log.debug("_on_rename_library_requested: Called.")
+        logger.debug("_on_rename_library_requested: Called.")
         current_library = self.browser.get_current_library()
         if not current_library:
             return
@@ -450,7 +446,7 @@ class LibraryEditor(QWidget):
 
     def _on_import_library_requested(self):
         """Handles request to import a library."""
-        Path.Log.debug("_on_import_library_requested: Called.")
+        logger.debug("_on_import_library_requested: Called.")
         dialog = AssetOpenDialog(
             cam_assets, asset_class=Library, serializers=library_serializers, parent=self
         )
@@ -464,7 +460,7 @@ class LibraryEditor(QWidget):
             self._refresh_library_list()
             self._update_button_states()
         except Exception as e:
-            Path.Log.error(f"Failed to import library: {file_path} {e}")
+            logger.error(f"Failed to import library: {file_path} {e}")
             QMessageBox.critical(
                 self,
                 FreeCAD.Qt.translate("CAM", "Error"),
@@ -473,7 +469,7 @@ class LibraryEditor(QWidget):
 
     def _on_export_library_requested(self):
         """Handles request to export the selected library."""
-        Path.Log.debug("_on_export_library_requested: Called.")
+        logger.debug("_on_export_library_requested: Called.")
         current_library = self.browser.get_current_library()
         if not current_library:
             return
@@ -484,7 +480,7 @@ class LibraryEditor(QWidget):
 
     def _on_add_toolbit_requested(self):
         """Handles request to add a new toolbit to the current library or create standalone."""
-        Path.Log.debug("_on_add_toolbit_requested: Called.")
+        logger.debug("_on_add_toolbit_requested: Called.")
         current_library = self.browser.get_current_library()
 
         # Select the shape for the new toolbit
@@ -518,24 +514,24 @@ class LibraryEditor(QWidget):
                 tool_no = editor.get_tool_no()
 
             tool_asset_uri = cam_assets.add(new_toolbit)
-            Path.Log.debug(f"_on_add_toolbit_requested: Saved tool with URI: {tool_asset_uri}")
+            logger.debug(f"_on_add_toolbit_requested: Saved tool with URI: {tool_asset_uri}")
 
             # Add the toolbit to the current library if one is selected
             if current_library:
                 toolno = current_library.add_bit(new_toolbit, bit_no=tool_no)
-                Path.Log.debug(
+                logger.debug(
                     f"_on_add_toolbit_requested: Added toolbit {new_toolbit.get_id()} (URI: {new_toolbit.get_uri()}) "
                     f"to current_library with number {toolno}."
                 )
                 # Save the library
                 cam_assets.add(current_library)
             else:
-                Path.Log.debug(
+                logger.debug(
                     f"_on_add_toolbit_requested: Created standalone toolbit {new_toolbit.get_id()} (URI: {new_toolbit.get_uri()})"
                 )
 
         except Exception as e:
-            Path.Log.error(f"Failed to create or add new toolbit: {e}")
+            logger.error(f"Failed to create or add new toolbit: {e}")
             QMessageBox.critical(
                 self,
                 FreeCAD.Qt.translate("CAM", "Error Creating Toolbit"),
@@ -567,10 +563,10 @@ class LibraryEditor(QWidget):
 
     def _on_import_toolbit_requested(self):
         """Handles request to import a toolbit."""
-        Path.Log.debug("_on_import_toolbit_requested: Called.")
+        logger.debug("_on_import_toolbit_requested: Called.")
         current_library = self.browser.get_current_library()
         if not current_library:
-            Path.Log.warning("Cannot import toolbit: No library selected.")
+            logger.warning("Cannot import toolbit: No library selected.")
             QMessageBox.warning(
                 self,
                 FreeCAD.Qt.translate("CAM", "Warning"),
@@ -587,48 +583,48 @@ class LibraryEditor(QWidget):
         file_path, toolbit = cast(Tuple[pathlib.Path, ToolBit], response)
 
         # Debug logging for imported toolbit
-        Path.Log.info(
+        logger.info(
             f"IMPORT TOOLBIT: file_path={file_path}, toolbit.id={toolbit.id}, toolbit.label={toolbit.label}"
         )
         import traceback
 
         stack = traceback.format_stack()
         caller_info = "".join(stack[-3:-1])
-        Path.Log.info(f"IMPORT TOOLBIT CALLER:\n{caller_info}")
+        logger.info(f"IMPORT TOOLBIT CALLER:\n{caller_info}")
 
         # Check if toolbit already exists in asset manager
         toolbit_uri = toolbit.get_uri()
-        Path.Log.info(f"IMPORT CHECK: toolbit_uri={toolbit_uri}")
+        logger.info(f"IMPORT CHECK: toolbit_uri={toolbit_uri}")
         existing_toolbit = None
         try:
             existing_toolbit = cam_assets.get(toolbit_uri, store=["local", "builtin"], depth=0)
-            Path.Log.info(
+            logger.info(
                 f"IMPORT CHECK: Toolbit {toolbit.id} already exists, using existing reference"
             )
-            Path.Log.info(
+            logger.info(
                 f"IMPORT CHECK: existing_toolbit.id={existing_toolbit.id}, existing_toolbit.label={existing_toolbit.label}"
             )
         except FileNotFoundError:
             # Toolbit doesn't exist, save it as new
-            Path.Log.info(f"IMPORT CHECK: Toolbit {toolbit.id} is new, saving to disk")
+            logger.info(f"IMPORT CHECK: Toolbit {toolbit.id} is new, saving to disk")
             new_uri = cam_assets.add(toolbit)
-            Path.Log.info(f"IMPORT CHECK: Toolbit saved with new URI: {new_uri}")
+            logger.info(f"IMPORT CHECK: Toolbit saved with new URI: {new_uri}")
             existing_toolbit = toolbit
 
         # Add the toolbit (existing or new) to the current library
-        Path.Log.info(
+        logger.info(
             f"IMPORT ADD: Adding toolbit {existing_toolbit.id} to library {current_library.label}"
         )
         added_toolbit = current_library.add_bit(existing_toolbit)
         if added_toolbit:
-            Path.Log.info(f"IMPORT ADD: Successfully added toolbit to library")
+            logger.info(f"IMPORT ADD: Successfully added toolbit to library")
             cam_assets.add(current_library)  # Save the modified library
             self.browser.refresh()
             self.browser.select_by_uri([str(existing_toolbit.get_uri())])
             self._update_button_states()
         else:
-            Path.Log.warning(f"IMPORT ADD: Failed to add toolbit {existing_toolbit.id} to library")
-            Path.Log.warning(
+            logger.warning(f"IMPORT ADD: Failed to add toolbit {existing_toolbit.id} to library")
+            logger.warning(
                 f"IMPORT FAILED: Failed to import toolbit from {file_path} to library {current_library.label}."
             )
             QMessageBox.warning(
@@ -642,10 +638,10 @@ class LibraryEditor(QWidget):
 
     def _on_export_toolbit_requested(self):
         """Handles request to export the selected toolbit."""
-        Path.Log.debug("_on_export_toolbit_requested: Called.")
+        logger.debug("_on_export_toolbit_requested: Called.")
         selected_toolbits = self.browser.get_selected_bits()
         if not selected_toolbits:
-            Path.Log.warning("Cannot export toolbit: No toolbit selected.")
+            logger.warning("Cannot export toolbit: No toolbit selected.")
             QMessageBox.warning(
                 self,
                 FreeCAD.Qt.translate("CAM", "Warning"),
@@ -654,7 +650,7 @@ class LibraryEditor(QWidget):
             return
 
         if len(selected_toolbits) > 1:
-            Path.Log.warning("Cannot export multiple toolbits: Please select only one.")
+            logger.warning("Cannot export multiple toolbits: Please select only one.")
             QMessageBox.warning(
                 self,
                 FreeCAD.Qt.translate("CAM", "Warning"),

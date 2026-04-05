@@ -39,11 +39,7 @@ __doc__ = "Vcarve operation page controller and command implementation."
 
 # There is a bug in logging library. To enable debugging - set True also in Op/Vcarve.py
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 translate = FreeCAD.Qt.translate
 
@@ -55,27 +51,27 @@ class TaskPanelBaseGeometryPage(PathOpGui.TaskPanelBaseGeometryPage):
         return super(TaskPanelBaseGeometryPage, self)
 
     def addBaseGeometry(self, selection):
-        Path.Log.track(selection)
+        logger.track(selection)
         added = False
         shapes = self.obj.BaseShapes
         for sel in selection:
             job = PathUtils.findParentJob(self.obj)
             base = job.Proxy.resourceClone(job, sel.Object)
             if not base:
-                Path.Log.notice(
+                logger.notice(
                     (translate("CAM", "%s is not a Base Model object of the job %s") + "\n")
                     % (sel.Object.Label, job.Label)
                 )
                 continue
             if base in shapes:
-                Path.Log.notice("Base shape %s already in the list".format(sel.Object.Label))
+                logger.notice("Base shape %s already in the list".format(sel.Object.Label))
                 continue
             if base.isDerivedFrom("Part::Part2DObject"):
                 if sel.HasSubObjects:
                     # selectively add some elements of the drawing to the Base
                     for sub in sel.SubElementNames:
                         if "Vertex" in sub:
-                            Path.Log.info("Ignoring vertex")
+                            logger.info("Ignoring vertex")
                         else:
                             self.obj.Proxy.addBase(self.obj, base, sub)
                 else:
@@ -87,7 +83,7 @@ class TaskPanelBaseGeometryPage(PathOpGui.TaskPanelBaseGeometryPage):
 
         if not added:
             # user wants us to engrave an edge of face of a base model
-            Path.Log.info("  call default")
+            logger.info("  call default")
             base = self.super().addBaseGeometry(selection)
             added = added or base
 
@@ -104,7 +100,7 @@ class TaskPanelBaseGeometryPage(PathOpGui.TaskPanelBaseGeometryPage):
         self.form.baseList.blockSignals(False)
 
     def updateBase(self):
-        Path.Log.track()
+        logger.track()
         shapes = []
         for i in range(self.form.baseList.count()):
             item = self.form.baseList.item(i)
@@ -112,7 +108,7 @@ class TaskPanelBaseGeometryPage(PathOpGui.TaskPanelBaseGeometryPage):
             sub = item.data(self.super().DataObjectSub)
             if not sub:
                 shapes.append(obj)
-        Path.Log.debug("Setting new base shapes: %s -> %s" % (self.obj.BaseShapes, shapes))
+        logger.debug("Setting new base shapes: %s -> %s" % (self.obj.BaseShapes, shapes))
         self.obj.BaseShapes = shapes
         return self.super().updateBase()
 

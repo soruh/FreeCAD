@@ -32,11 +32,7 @@ __doc__ = "Generates the helical toolpath for a single spot targetshape"
 __contributors__ = "russ4262 (Russell Johnson), Lorenz Hüdepohl"
 
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 def generate(
@@ -152,7 +148,7 @@ def generate(
     if topCenterPoint.z < bottomCenterPoint.z:
         raise ValueError("start point is below end point")
 
-    Path.Log.track(
+    logger.track(
         "(helix: <{}, {}>\n outer radius {}\n inner radius {}\n retract height {}\n step {}\n start point {}\n end point {}\n pitch {}\n tool diameter {}\n direction {}\n startAt {})".format(
             topCenterPoint.x,
             topCenterPoint.y,
@@ -170,10 +166,10 @@ def generate(
     )
 
     if outer_radius < inner_radius or Path.Geom.isRoughly(outer_radius, inner_radius) or not step:
-        Path.Log.debug("(single helix mode)\n")
+        logger.debug("(single helix mode)\n")
         radii = [outer_radius]
     else:
-        Path.Log.debug("(annulus mode)\n")
+        logger.debug("(annulus mode)\n")
         work_distance = outer_radius - inner_radius
         nr = math.ceil(work_distance / step) + 1
         radii = linspace(outer_radius, inner_radius, nr)
@@ -182,7 +178,7 @@ def generate(
         # reverse order if going from inside to outside
         radii = radii[::-1]
 
-    Path.Log.debug("Radii: {}".format(radii))
+    logger.debug("Radii: {}".format(radii))
     """Calculate the number of full and partial turns required
     Each full turn is two 180 degree arcs
     zsteps is equally spaced pitch values"""

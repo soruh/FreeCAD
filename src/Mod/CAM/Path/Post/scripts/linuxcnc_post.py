@@ -37,11 +37,7 @@ import FreeCAD
 translate = FreeCAD.Qt.translate
 
 DEBUG = False
-if DEBUG:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, DEBUG)
 
 # Define some types that are used throughout this file.
 Values = Dict[str, Any]
@@ -126,7 +122,7 @@ class Linuxcnc(PostProcessor):
             tooltipargs=tooltipargs,
             units=units,
         )
-        Path.Log.debug("LinuxCNC post processor initialized.")
+        logger.debug("LinuxCNC post processor initialized.")
 
     def init_values(self, values: Values) -> None:
         """Initialize values that are used throughout the postprocessor."""
@@ -264,7 +260,7 @@ class Linuxcnc(PostProcessor):
 
                 # Extract pitch from F parameter
                 if "F" not in params:
-                    Path.Log.warning(f"Rigid tapping {command.Name} missing F (pitch) parameter")
+                    logger.warning(f"Rigid tapping {command.Name} missing F (pitch) parameter")
                     return super()._convert_drill_cycle(command)
 
                 pitch = params["F"]
@@ -360,15 +356,15 @@ class Linuxcnc(PostProcessor):
 
     def get_sanity_checks(self, job):
         """LinuxCNC specific sanity checks."""
-        Path.Log.track("LinuxCNC.get_sanity_checks() called")
+        logger.track("LinuxCNC.get_sanity_checks() called")
         squawks = []
 
         # Check blend tolerance vs operation precision
-        Path.Log.track("Checking blend tolerance")
+        logger.track("Checking blend tolerance")
         blend_tolerance = self.values.get("BLEND_TOLERANCE", 0.0)
-        Path.Log.track(f"blend_tolerance: {blend_tolerance}")
+        logger.track(f"blend_tolerance: {blend_tolerance}")
         if blend_tolerance > 0.1:  # 0.1mm threshold for precision work
-            Path.Log.track("Adding NOTE for high blend tolerance")
+            logger.track("Adding NOTE for high blend tolerance")
             squawks.append(
                 self._create_squawk(
                     "NOTE",
@@ -376,7 +372,7 @@ class Linuxcnc(PostProcessor):
                 )
             )
         elif blend_tolerance > 0.5:  # Very high tolerance
-            Path.Log.track("Adding CAUTION for very high blend tolerance")
+            logger.track("Adding CAUTION for very high blend tolerance")
             squawks.append(
                 self._create_squawk(
                     "CAUTION",
@@ -385,7 +381,7 @@ class Linuxcnc(PostProcessor):
             )
 
         # Check for unsupported G-codes in operations
-        Path.Log.track("Checking for unsupported G-codes")
+        logger.track("Checking for unsupported G-codes")
         supported_commands = set()
         if self.values.get("SUPPORTED_COMMANDS"):
             supported_commands = set(
@@ -393,15 +389,15 @@ class Linuxcnc(PostProcessor):
                 for cmd in self.values.get("SUPPORTED_COMMANDS", "").split("\n")
                 if cmd.strip()
             )
-        Path.Log.track(f"supported_commands: {supported_commands}")
+        logger.track(f"supported_commands: {supported_commands}")
 
         # Check operations for potentially problematic commands
         operations = getattr(job.Operations, "Group", [])
-        Path.Log.track(f"Found {len(operations)} operations to check")
+        logger.track(f"Found {len(operations)} operations to check")
         for i, op in enumerate(operations):
-            Path.Log.track(f"Checking operation {i}: {getattr(op, 'Label', 'unnamed')}")
+            logger.track(f"Checking operation {i}: {getattr(op, 'Label', 'unnamed')}")
             if hasattr(op, "Path") and op.Path:
-                Path.Log.track(f"Operation has Path with {len(op.Path.Commands)} commands")
+                logger.track(f"Operation has Path with {len(op.Path.Commands)} commands")
                 for j, cmd in enumerate(op.Path.Commands):
                     if hasattr(cmd, "Name"):
                         gcode = cmd.Name
@@ -436,7 +432,7 @@ class Linuxcnc(PostProcessor):
                             "G99",
                         ]:
                             if supported_commands and gcode not in supported_commands:
-                                Path.Log.track(f"Adding WARNING for unsupported command {gcode}")
+                                logger.track(f"Adding WARNING for unsupported command {gcode}")
                                 squawks.append(
                                     self._create_squawk(
                                         "WARNING",
@@ -445,18 +441,18 @@ class Linuxcnc(PostProcessor):
                                 )
 
         # Check feed rates vs machine capabilities (if available)
-        Path.Log.track("Checking feed rates vs machine capabilities")
+        logger.track("Checking feed rates vs machine capabilities")
         max_rapid_feed = self.values.get("MAX_RAPID_FEED", None)
-        Path.Log.track(f"max_rapid_feed: {max_rapid_feed}")
+        logger.track(f"max_rapid_feed: {max_rapid_feed}")
         if max_rapid_feed:
             for i, op in enumerate(operations):
-                Path.Log.track(
+                logger.track(
                     f"Checking feed rate for operation {i}: {getattr(op, 'Label', 'unnamed')}"
                 )
                 if hasattr(op, "HoriFeed"):
-                    Path.Log.track(f"Operation HoriFeed: {op.HoriFeed}")
+                    logger.track(f"Operation HoriFeed: {op.HoriFeed}")
                     if op.HoriFeed > max_rapid_feed:
-                        Path.Log.track("Adding CAUTION for high feed rate")
+                        logger.track("Adding CAUTION for high feed rate")
                         squawks.append(
                             self._create_squawk(
                                 "CAUTION",
@@ -464,21 +460,21 @@ class Linuxcnc(PostProcessor):
                             )
                         )
                 else:
-                    Path.Log.track("Operation has no HoriFeed attribute")
+                    logger.track("Operation has no HoriFeed attribute")
 
         # Check spindle speed ranges
-        Path.Log.track("Checking spindle speed ranges")
+        logger.track("Checking spindle speed ranges")
         max_spindle_speed = self.values.get("MAX_SPINDLE_SPEED", None)
-        Path.Log.track(f"max_spindle_speed: {max_spindle_speed}")
+        logger.track(f"max_spindle_speed: {max_spindle_speed}")
         if max_spindle_speed:
             for i, op in enumerate(operations):
-                Path.Log.track(
+                logger.track(
                     f"Checking spindle speed for operation {i}: {getattr(op, 'Label', 'unnamed')}"
                 )
                 if hasattr(op, "SpindleSpeed"):
-                    Path.Log.track(f"Operation SpindleSpeed: {op.SpindleSpeed}")
+                    logger.track(f"Operation SpindleSpeed: {op.SpindleSpeed}")
                     if op.SpindleSpeed > max_spindle_speed:
-                        Path.Log.track("Adding WARNING for high spindle speed")
+                        logger.track("Adding WARNING for high spindle speed")
                         squawks.append(
                             self._create_squawk(
                                 "WARNING",
@@ -486,22 +482,22 @@ class Linuxcnc(PostProcessor):
                             )
                         )
                 else:
-                    Path.Log.track("Operation has no SpindleSpeed attribute")
+                    logger.track("Operation has no SpindleSpeed attribute")
 
         # Check for G41/G42 usage with tool radius compensation
-        Path.Log.track("Checking tool radius compensation usage")
+        logger.track("Checking tool radius compensation usage")
         supports_tool_radius_comp = self.values.get("SUPPORTS_TOOL_RADIUS_COMPENSATION", False)
-        Path.Log.track(f"supports_tool_radius_comp: {supports_tool_radius_comp}")
+        logger.track(f"supports_tool_radius_comp: {supports_tool_radius_comp}")
         if not supports_tool_radius_comp:
             for i, op in enumerate(operations):
-                Path.Log.track(
+                logger.track(
                     f"Checking G41/G42 for operation {i}: {getattr(op, 'Label', 'unnamed')}"
                 )
                 if hasattr(op, "Path") and op.Path:
                     g41_g42_found = False
                     for cmd in op.Path.Commands:
                         if hasattr(cmd, "Name") and cmd.Name in ["G41", "G42"]:
-                            Path.Log.track(f"Found {cmd.Name} in operation")
+                            logger.track(f"Found {cmd.Name} in operation")
                             squawks.append(
                                 self._create_squawk(
                                     "WARNING",
@@ -511,11 +507,11 @@ class Linuxcnc(PostProcessor):
                             g41_g42_found = True
                             break
                     if not g41_g42_found:
-                        Path.Log.track("No G41/G42 found in operation")
+                        logger.track("No G41/G42 found in operation")
                 else:
-                    Path.Log.track("Operation has no Path")
+                    logger.track("Operation has no Path")
 
-        Path.Log.track(f"LinuxCNC.get_sanity_checks() returning {len(squawks)} squawks")
+        logger.track(f"LinuxCNC.get_sanity_checks() returning {len(squawks)} squawks")
         return squawks
 
     @property

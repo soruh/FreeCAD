@@ -38,11 +38,7 @@ __url__ = "https://forum.freecad.org/viewtopic.php?t=93896"
 __doc__ = ""
 
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 translate = FreeCAD.Qt.translate
@@ -133,7 +129,7 @@ def _setSafetyZ(obj):
 # Geometry for selected shapes
 class ObjectPartShape:
     def __init__(self, obj, base):
-        # Path.Log.info("ObjectPartShape.__init__()")
+        # logger.info("ObjectPartShape.__init__()")
         self.obj = obj
         obj.addProperty(
             "App::PropertyLinkSubListGlobal",

@@ -35,7 +35,7 @@ class ToolBitTaperedBallNose(ToolBit, CuttingToolMixin, RotaryToolBitMixin):
         id: str | None = None,
         attrs: Optional[Mapping] = None,
     ):
-        Path.Log.track(f"ToolBitTaperedBallNose __init__ called with id: {id}")
+        logger.track(f"ToolBitTaperedBallNose __init__ called with id: {id}")
         super().__init__(tool_bit_shape, id=id, attrs=attrs)
         self._init_cutting_properties(self.obj)
 

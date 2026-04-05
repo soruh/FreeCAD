@@ -30,6 +30,8 @@ from ...assets import Asset, AssetUri, AssetSerializer
 from ...toolbit import ToolBit
 from ..models.library import Library
 
+logger = Path.Log.getModuleLogger()
+
 
 class FCTLSerializer(AssetSerializer):
     for_class = Library
@@ -80,7 +82,7 @@ class FCTLSerializer(AssetSerializer):
         library = Library(label, id=id)
 
         if dependencies is None:
-            Path.Log.debug(
+            logger.debug(
                 f"FCTLSerializer.deserialize: Shallow load for library '{library.label}' (id: {id}). Tools not populated."
             )
             return library  # Only process tools if dependencies were resolved
@@ -90,7 +92,7 @@ class FCTLSerializer(AssetSerializer):
             try:
                 tool_no = int(tool_data["nr"])
             except ValueError:
-                Path.Log.warning(f"Invalid tool ID in tool data: {tool_data}. Skipping.")
+                logger.warning(f"Invalid tool ID in tool data: {tool_data}. Skipping.")
                 continue
             tool_id = pathlib.Path(tool_data["path"]).stem  # Extract tool ID
             tool_uri = AssetUri(f"toolbit://{tool_id}")
@@ -98,7 +100,7 @@ class FCTLSerializer(AssetSerializer):
             if tool:
                 # Ensure the dependency is a ToolBit instance
                 if not isinstance(tool, ToolBit):
-                    Path.Log.warning(
+                    logger.warning(
                         f"Dependency for tool '{tool_id}' is not a ToolBit instance. Skipping."
                     )
                     continue
@@ -106,7 +108,7 @@ class FCTLSerializer(AssetSerializer):
             else:
                 # This should not happen if dependencies were resolved correctly,
                 # but as a safeguard, log a warning and skip the tool.
-                Path.Log.warning(
+                logger.warning(
                     f"Tool with id {tool_id} not found in dependencies during deserialization."
                 )
                 # Create a placeholder toolbit with the original ID to preserve library structure
@@ -117,7 +119,7 @@ class FCTLSerializer(AssetSerializer):
                 placeholder_toolbit = ToolBitCustom(placeholder_shape, id=tool_id)
                 placeholder_toolbit.label = f"Missing Tool ({tool_id})"
                 library.add_bit(placeholder_toolbit, bit_no=tool_no)
-                Path.Log.info(f"Created placeholder toolbit with original ID {tool_id}")
+                logger.info(f"Created placeholder toolbit with original ID {tool_id}")
         return library
 
     @classmethod
@@ -129,13 +131,13 @@ class FCTLSerializer(AssetSerializer):
         # Generate a unique ID for this library instance
         library_id = str(uuid.uuid4())
 
-        Path.Log.info(
+        logger.info(
             f"FCTL DEEP_DESERIALIZE: Starting deep deserialization for library id='{library_id}'"
         )
 
         # Extract dependency URIs from the library data
         dependency_uris = cls.extract_dependencies(data)
-        Path.Log.info(
+        logger.info(
             f"FCTL DEEP_DESERIALIZE: Found {len(dependency_uris)} toolbit dependencies: {[uri.asset_id for uri in dependency_uris]}"
         )
 
@@ -143,24 +145,24 @@ class FCTLSerializer(AssetSerializer):
         resolved_dependencies = {}
         for dep_uri in dependency_uris:
             try:
-                Path.Log.info(
+                logger.info(
                     f"FCTL DEEP_DESERIALIZE: Fetching toolbit '{dep_uri.asset_id}' from stores ['local', 'builtin']"
                 )
 
                 # Check if toolbit exists in each store individually for debugging
                 exists_local = cam_assets.exists(dep_uri, store="local")
                 exists_builtin = cam_assets.exists(dep_uri, store="builtin")
-                Path.Log.info(
+                logger.info(
                     f"FCTL DEEP_DESERIALIZE: Toolbit '{dep_uri.asset_id}' exists - local: {exists_local}, builtin: {exists_builtin}"
                 )
 
                 toolbit = cam_assets.get(dep_uri, store=["local", "builtin"], depth=0)
                 resolved_dependencies[dep_uri] = toolbit
-                Path.Log.info(
+                logger.info(
                     f"FCTL DEEP_DESERIALIZE: Successfully fetched toolbit '{dep_uri.asset_id}'"
                 )
             except Exception as e:
-                Path.Log.warning(
+                logger.warning(
                     f"FCTL DEEP_DESERIALIZE: Failed to fetch toolbit '{dep_uri.asset_id}': {e}"
                 )
 
@@ -169,18 +171,18 @@ class FCTLSerializer(AssetSerializer):
                     # Check what's actually in the stores
                     local_toolbits = cam_assets.list_assets("toolbit", store="local")
                     local_ids = [uri.asset_id for uri in local_toolbits]
-                    Path.Log.info(
+                    logger.info(
                         f"FCTL DEBUG: Local store has {len(local_ids)} toolbits: {local_ids[:10]}{'...' if len(local_ids) > 10 else ''}"
                     )
 
                     if dep_uri.asset_id in local_ids:
-                        Path.Log.warning(
+                        logger.warning(
                             f"FCTL DEBUG: Toolbit '{dep_uri.asset_id}' IS in local store list but get() failed!"
                         )
                 except Exception as list_error:
-                    Path.Log.error(f"FCTL DEBUG: Failed to list local toolbits: {list_error}")
+                    logger.error(f"FCTL DEBUG: Failed to list local toolbits: {list_error}")
 
-        Path.Log.info(
+        logger.info(
             f"FCTL DEEP_DESERIALIZE: Resolved {len(resolved_dependencies)} of {len(dependency_uris)} dependencies"
         )
 
@@ -198,13 +200,13 @@ class FCTLSerializer(AssetSerializer):
         # Use filename stem as library ID for meaningful names
         library_id = file_path.stem
 
-        Path.Log.info(
+        logger.info(
             f"FCTL DEEP_DESERIALIZE_WITH_CONTEXT: Starting deep deserialization for library from {file_path}"
         )
 
         # Extract dependency URIs from the library data
         dependency_uris = cls.extract_dependencies(data)
-        Path.Log.info(
+        logger.info(
             f"FCTL DEEP_DESERIALIZE_WITH_CONTEXT: Found {len(dependency_uris)} toolbit dependencies: {[uri.asset_id for uri in dependency_uris]}"
         )
 
@@ -213,17 +215,17 @@ class FCTLSerializer(AssetSerializer):
         for dep_uri in dependency_uris:
             try:
                 # First try to get from asset manager stores
-                Path.Log.info(
+                logger.info(
                     f"FCTL EXTERNAL: Trying to fetch toolbit '{dep_uri.asset_id}' from stores ['local', 'builtin']"
                 )
                 toolbit = cam_assets.get(dep_uri, store=["local", "builtin"], depth=0)
                 resolved_dependencies[dep_uri] = toolbit
-                Path.Log.info(
+                logger.info(
                     f"FCTL EXTERNAL: Successfully fetched toolbit '{dep_uri.asset_id}' from stores"
                 )
             except Exception as e:
                 # If not in stores, try to load from parallel Bit directory
-                Path.Log.info(
+                logger.info(
                     f"FCTL EXTERNAL: Toolbit '{dep_uri.asset_id}' not in stores, trying external file: {e}"
                 )
 
@@ -251,22 +253,22 @@ class FCTLSerializer(AssetSerializer):
                                     toolbit = serializer_class.deep_deserialize(raw_toolbit_data)
                                     resolved_dependencies[dep_uri] = toolbit
                                     toolbit_loaded = True
-                                    Path.Log.info(
+                                    logger.info(
                                         f"FCTL EXTERNAL: Successfully loaded toolbit '{dep_uri.asset_id}' from {toolbit_file}"
                                     )
                                     break
                             except Exception as load_error:
-                                Path.Log.warning(
+                                logger.warning(
                                     f"FCTL EXTERNAL: Failed to load toolbit from {toolbit_file}: {load_error}"
                                 )
                                 continue
 
                 if not toolbit_loaded:
-                    Path.Log.warning(
+                    logger.warning(
                         f"FCTL EXTERNAL: Could not load toolbit '{dep_uri.asset_id}' from external files"
                     )
 
-        Path.Log.info(
+        logger.info(
             f"FCTL EXTERNAL: Resolved {len(resolved_dependencies)} of {len(dependency_uris)} dependencies"
         )
 

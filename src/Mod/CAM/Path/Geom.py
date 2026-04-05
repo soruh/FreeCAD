@@ -43,11 +43,7 @@ Tolerance = 0.000001
 
 translate = FreeCAD.Qt.translate
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class Side:
@@ -181,7 +177,7 @@ def isVertical(obj):
             vertEdges = [e for e in obj.Edges if isVertical(e)]
             return len(vertEdges) == 2 and len(obj.Edges) == 4
 
-        Path.Log.info(
+        logger.info(
             translate("PathGeom", "face %s not handled, assuming not vertical") % type(obj.Surface)
         )
         return None
@@ -196,12 +192,12 @@ def isVertical(obj):
             # a curve is vertical if its end points are vertical
             return isVertical(obj.Curve.EndPoint - obj.Curve.StartPoint)
 
-        Path.Log.info(
+        logger.info(
             translate("PathGeom", "edge %s not handled, assuming not vertical") % type(obj.Curve)
         )
         return None
 
-    Path.Log.error(translate("PathGeom", "isVertical(%s) not supported") % obj)
+    logger.error(translate("PathGeom", "isVertical(%s) not supported") % obj)
     return None
 
 
@@ -231,7 +227,7 @@ def isHorizontal(obj):
             return isVertical(obj.Curve.Axis)
         return isRoughly(obj.BoundBox.ZLength, 0.0)
 
-    Path.Log.error(translate("PathGeom", "isHorizontal(%s) not supported") % obj)
+    logger.error(translate("PathGeom", "isHorizontal(%s) not supported") % obj)
     return None
 
 
@@ -265,7 +261,7 @@ def speedBetweenPoints(p0, p1, hSpeed, vSpeed):
         pitch = pitch + 1
     while pitch > 1:
         pitch = pitch - 1
-    Path.Log.debug(
+    logger.debug(
         "  pitch = %g %g (%.2f, %.2f, %.2f) -> %.2f"
         % (pitch, math.atan2(xy(d).Length, d.z), d.x, d.y, d.z, xy(d).Length)
     )
@@ -363,7 +359,7 @@ def cmdsForEdge(edge, flip=False, approximation=False, hSpeed=0, vSpeed=0, tol=0
                 offset = edge.Curve.Center - p3
             else:
                 # pd = Part.Circle(xy(p1), xy(p2), xy(p3)).Center
-                # Path.Log.debug(
+                # logger.debug(
                 #    "**** %s.%d: (%.2f, %.2f, %.2f) - (%.2f, %.2f, %.2f) - (%.2f, %.2f, %.2f) -> center=(%.2f, %.2f)"
                 #    % (cmd, flip, p1.x, p1.y, p1.z, p2.x, p2.y, p2.z, p3.x, p3.y, p3.z, pd.x, pd.y)
                 # )
@@ -374,16 +370,16 @@ def cmdsForEdge(edge, flip=False, approximation=False, hSpeed=0, vSpeed=0, tol=0
                 pc = xy(p3)
                 offset = Part.Circle(pa, pb, pc).Center - pa
 
-                # Path.Log.debug(
+                # logger.debug(
                 #    "**** (%.2f, %.2f, %.2f) - (%.2f, %.2f, %.2f)"
                 #    % (pa.x, pa.y, pa.z, pc.x, pc.y, pc.z)
                 # )
-                # Path.Log.debug(
+                # logger.debug(
                 #    "**** (%.2f, %.2f, %.2f) - (%.2f, %.2f, %.2f)"
                 #    % (pb.x, pb.y, pb.z, pd.x, pd.y, pd.z)
                 # )
 
-            # Path.Log.debug("**** (%.2f, %.2f, %.2f)" % (offset.x, offset.y, offset.z))
+            # logger.debug("**** (%.2f, %.2f, %.2f)" % (offset.x, offset.y, offset.z))
 
             params.update({"I": offset.x, "J": offset.y, "K": (p3.z - p1.z) / 2})
             # G2/G3 commands are always performed at hSpeed
@@ -416,8 +412,8 @@ def edgeForCmd(cmd, startPoint):
     """edgeForCmd(cmd, startPoint).
     Returns an Edge representing the given command, assuming a given startPoint."""
 
-    # Path.Log.debug("cmd: {}".format(cmd))
-    # Path.Log.debug("startpoint {}".format(startPoint))
+    # logger.debug("cmd: {}".format(cmd))
+    # logger.debug("startpoint {}".format(startPoint))
 
     endPoint = commandEndPoint(cmd, startPoint)
     if (cmd.Name in CmdMoveStraight) or (cmd.Name in CmdMoveRapid) or (cmd.Name in CmdMoveDrill):
@@ -432,7 +428,7 @@ def edgeForCmd(cmd, startPoint):
         d = -B.x * A.y + B.y * A.x
 
         if isRoughly(d, 0, 0.005):
-            # Path.Log.debug(
+            # logger.debug(
             #    "Half circle arc at: (%.2f, %.2f, %.2f)" % (center.x, center.y, center.z)
             # )
             # we're dealing with half a circle here
@@ -442,21 +438,21 @@ def edgeForCmd(cmd, startPoint):
         else:
             C = A + B
             angle = getAngle(C)
-            # Path.Log.debug(
+            # logger.debug(
             #    "Arc (%8f) at: (%.2f, %.2f, %.2f) -> angle=%f"
             #    % (d, center.x, center.y, center.z, angle / math.pi)
             # )
 
         R = A.Length
-        # Path.Log.debug(
+        # logger.debug(
         #    "arc: p1=(%.2f, %.2f) p2=(%.2f, %.2f) -> center=(%.2f, %.2f)"
         #    % (startPoint.x, startPoint.y, endPoint.x, endPoint.y, center.x, center.y)
         # )
-        # Path.Log.debug("arc: A=(%.2f, %.2f) B=(%.2f, %.2f) -> d=%.2f" % (A.x, A.y, B.x, B.y, d))
-        # Path.Log.debug("arc: R=%.2f angle=%.2f" % (R, angle / math.pi))
+        # logger.debug("arc: A=(%.2f, %.2f) B=(%.2f, %.2f) -> d=%.2f" % (A.x, A.y, B.x, B.y, d))
+        # logger.debug("arc: R=%.2f angle=%.2f" % (R, angle / math.pi))
         if isRoughly(startPoint.z, endPoint.z):
             midPoint = center + Vector(math.cos(angle), math.sin(angle), 0) * R
-            # Path.Log.debug(
+            # logger.debug(
             #    "arc: (%.2f, %.2f) -> (%.2f, %.2f) -> (%.2f, %.2f)"
             #    % (
             #        startPoint.x,
@@ -467,9 +463,9 @@ def edgeForCmd(cmd, startPoint):
             #        endPoint.y,
             #    )
             # )
-            # Path.Log.debug("StartPoint:{}".format(startPoint))
-            # Path.Log.debug("MidPoint:{}".format(midPoint))
-            # Path.Log.debug("EndPoint:{}".format(endPoint))
+            # logger.debug("StartPoint:{}".format(startPoint))
+            # logger.debug("MidPoint:{}".format(midPoint))
+            # logger.debug("EndPoint:{}".format(endPoint))
 
             if pointsCoincide(startPoint, endPoint, 0.001):
                 return Part.makeCircle(R, center, FreeCAD.Vector(0, 0, 1))
@@ -649,10 +645,10 @@ def combineConnectedShapes(shapes):
     while not done:
         done = True
         combined = []
-        Path.Log.debug("shapes: {}".format(shapes))
+        logger.debug("shapes: {}".format(shapes))
         for shape in shapes:
             connected = [f for f in combined if isRoughly(shape.distToShape(f)[0], 0.0)]
-            Path.Log.debug(
+            logger.debug(
                 "  {}: connected: {} dist: {}".format(
                     len(combined),
                     connected,
@@ -733,14 +729,14 @@ def flipEdge(edge):
     elif isinstance(edge.Curve, Part.OffsetCurve):
         return edge.reversed()
 
-    Path.Log.warning(translate("PathGeom", "%s not supported for flipping") % type(edge.Curve))
+    logger.warning(translate("PathGeom", "%s not supported for flipping") % type(edge.Curve))
 
 
 def flipWire(wire):
     """Flip the entire wire and all its edges so it is being processed the other way around."""
     edges = [flipEdge(e) for e in wire.Edges]
     edges.reverse()
-    Path.Log.debug(edges)
+    logger.debug(edges)
     return Part.Wire(edges)
 
 
@@ -790,7 +786,7 @@ def combineHorizontalFaces(faces, keepOrder=False):
             "PathGeom",
             "Zero working area to process. Check your selection and settings.",
         )
-        Path.Log.info(msg)
+        logger.info(msg)
         return horizontal
 
     afbb = allFaces.BoundBox
@@ -860,6 +856,6 @@ def combineHorizontalFaces(faces, keepOrder=False):
         if len(ordered) == len(horizontal):
             horizontal = ordered
         else:
-            Path.Log.info(translate("PathGeom", "Can not restore order of faces."))
+            logger.info(translate("PathGeom", "Can not restore order of faces."))
 
     return horizontal

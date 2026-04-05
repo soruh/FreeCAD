@@ -26,16 +26,10 @@ from Path.Post.Processor import PostProcessor
 import Path
 import FreeCAD
 
-Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
-
 translate = FreeCAD.Qt.translate
 
 debug = False
-if debug:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, debug)
 
 Values = Dict[str, Any]
 
@@ -65,7 +59,7 @@ class Generic(PostProcessor):
             tooltipargs=[],
             units="Metric",
         )
-        Path.Log.debug("Generic post processor initialized")
+        logger.debug("Generic post processor initialized")
 
     def init_values(self, values: Values) -> None:
         """Initialize values that are used throughout the postprocessor."""

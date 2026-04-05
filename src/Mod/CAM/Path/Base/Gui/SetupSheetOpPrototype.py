@@ -34,11 +34,7 @@ __doc__ = "Task panel editor for a SetupSheet"
 
 LOGLEVEL = False
 
-if LOGLEVEL:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, LOGLEVEL)
 
 
 class _PropertyEditor(object):
@@ -68,7 +64,7 @@ class _PropertyEnumEditor(_PropertyEditor):
     """Editor for enumeration values - uses a combo box."""
 
     def widget(self, parent):
-        Path.Log.track(self.prop.name, self.prop.getEnumValues())
+        logger.track(self.prop.name, self.prop.getEnumValues())
         return QtGui.QComboBox(parent)
 
     def setEditorData(self, widget):

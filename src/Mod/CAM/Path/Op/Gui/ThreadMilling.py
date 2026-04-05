@@ -41,11 +41,7 @@ __author__ = "sliptonic (Brad Collette)"
 __url__ = "https://www.freecad.org"
 __doc__ = "UI and Command for CAM Thread Milling Operation."
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 translate = FreeCAD.Qt.translate
 
@@ -53,7 +49,7 @@ translate = FreeCAD.Qt.translate
 def fillThreads(form, dataFile, defaultSelect):
     form.threadName.blockSignals(True)
     select = form.threadName.currentText()
-    Path.Log.debug("select = '{}'".format(select))
+    logger.debug("select = '{}'".format(select))
     form.threadName.clear()
     with open("{}Mod/CAM/Data/Threads/{}".format(FreeCAD.getHomePath(), dataFile)) as fp:
         reader = csv.DictReader(fp)
@@ -90,7 +86,7 @@ class TaskPanelOpPage(PathCircularHoleBaseGui.TaskPanelOpPage):
 
     def getFields(self, obj):
         """getFields(obj) ... update obj's properties with values from the UI"""
-        Path.Log.track()
+        logger.track()
 
         self.majorDia.updateProperty()
         self.minorDia.updateProperty()
@@ -118,7 +114,7 @@ class TaskPanelOpPage(PathCircularHoleBaseGui.TaskPanelOpPage):
 
     def setFields(self, obj):
         """setFields(obj) ... update UI with obj properties' values"""
-        Path.Log.track()
+        logger.track()
 
         self.selectInComboBox(obj.ThreadOrientation, self.form.threadOrientation)
         self.selectInComboBox(obj.ThreadType, self.form.threadType)

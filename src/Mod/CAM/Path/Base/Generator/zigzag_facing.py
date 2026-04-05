@@ -32,11 +32,7 @@ import FreeCAD
 import Path
 from . import facing_common
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 def _create_link(
@@ -126,12 +122,12 @@ def _create_link(
 
     if dot1 > dot2:
         nx, ny = n1x, n1y
-        Path.Log.debug(f"  Chose n1: ({nx:.3f}, {ny:.3f}), dot1={dot1:.3f} > dot2={dot2:.3f}")
+        logger.debug(f"  Chose n1: ({nx:.3f}, {ny:.3f}), dot1={dot1:.3f} > dot2={dot2:.3f}")
     else:
         nx, ny = n2x, n2y
-        Path.Log.debug(f"  Chose n2: ({nx:.3f}, {ny:.3f}), dot2={dot2:.3f} > dot1={dot1:.3f}")
+        logger.debug(f"  Chose n2: ({nx:.3f}, {ny:.3f}), dot2={dot2:.3f} > dot1={dot1:.3f}")
 
-    Path.Log.debug(
+    logger.debug(
         f"  Chord: dx={dx:.3f}, dy={dy:.3f}, side={prev_seg['side']}, outward=({outward_x:.3f},{outward_y:.3f})"
     )
 
@@ -167,7 +163,7 @@ def _create_link(
     # chord × normal = (dx, dy, 0) × (nx, ny, 0) = (0, 0, dx*ny - dy*nx)
     z_cross = dx * ny - dy * nx
 
-    Path.Log.debug(f"  z_cross = {dx:.3f}*{ny:.3f} - {dy:.3f}*{nx:.3f} = {z_cross:.3f}")
+    logger.debug(f"  z_cross = {dx:.3f}*{ny:.3f} - {dy:.3f}*{nx:.3f} = {z_cross:.3f}")
 
     # Invert the logic - positive cross product means clockwise for our convention
     if z_cross < 0:
@@ -183,7 +179,7 @@ def _create_link(
     if not (math.isfinite(I) and math.isfinite(J)):
         return [Path.Command("G0", {"X": Q.x, "Y": Q.y})]
 
-    Path.Log.debug(
+    logger.debug(
         f"Arc link: P=({P.x:.3f},{P.y:.3f}) Q=({Q.x:.3f},{Q.y:.3f}) "
         f"C=({cx:.3f},{cy:.3f}) r={r:.3f} {arc_cmd} I={I:.3f} J={J:.3f}"
     )
@@ -228,7 +224,7 @@ def zigzag(
         and math.isfinite(min_t)
         and math.isfinite(max_t)
     ):
-        Path.Log.error("Zigzag: non-finite projection bounds; aborting")
+        logger.error("Zigzag: non-finite projection bounds; aborting")
         return []
 
     # === Use exactly the same step position generation as bidirectional and directional ===
@@ -252,15 +248,13 @@ def zigzag(
             step_positions.insert(0, step_positions[0] - stepover_distance)
             added = True
         if added:
-            Path.Log.info("Zigzag: Added extra pass(es) for full coverage at ≥100% stepover")
+            logger.info("Zigzag: Added extra pass(es) for full coverage at ≥100% stepover")
 
     # Reverse only reverses traversal order (same positions set as reverse=False, identical coverage)
     if reverse:
         step_positions = step_positions[::-1]
 
-    Path.Log.debug(
-        f"Zigzag: {len(step_positions)} passes generated (now identical to bidirectional)"
-    )
+    logger.debug(f"Zigzag: {len(step_positions)} passes generated (now identical to bidirectional)")
 
     # Determine if first pass should cut negative primary direction to maintain climb/conventional preference
     base_negative = (

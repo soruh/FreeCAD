@@ -35,11 +35,7 @@ import FreeCAD
 translate = FreeCAD.Qt.translate
 
 DEBUG = False
-if DEBUG:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, DEBUG)
 
 #
 # Define some types that are used throughout this file.
@@ -94,7 +90,7 @@ class Centroid(PostProcessor):
             tooltipargs=tooltipargs,
             units=units,
         )
-        Path.Log.debug("Centroid post processor initialized.")
+        logger.debug("Centroid post processor initialized.")
 
     def init_values(self, values: Values) -> None:
         """Initialize values that are used throughout the postprocessor."""

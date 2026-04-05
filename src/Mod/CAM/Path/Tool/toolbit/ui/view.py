@@ -28,6 +28,8 @@ import Path
 from Path.Base.Gui import IconViewProvider
 from Path.Tool.toolbit.ui.panel import TaskPanel
 
+logger = Path.Log.getModuleLogger()
+
 
 class ViewProvider(object):
     """
@@ -37,7 +39,7 @@ class ViewProvider(object):
     """
 
     def __init__(self, vobj, name):
-        Path.Log.track(name, vobj.Object)
+        logger.track(name, vobj.Object)
         self.panel = None
         self.icon = name
         self.obj = vobj.Object
@@ -45,7 +47,7 @@ class ViewProvider(object):
         vobj.Proxy = self
 
     def attach(self, vobj):
-        Path.Log.track(vobj.Object)
+        logger.track(vobj.Object)
         self.vobj = vobj
         self.obj = vobj.Object
 
@@ -67,21 +69,21 @@ class ViewProvider(object):
         return None
 
     def onDelete(self, vobj, arg2=None):
-        Path.Log.track(vobj.Object.Label)
+        logger.track(vobj.Object.Label)
         vobj.Object.Proxy.onDelete(vobj.Object)
 
     def getDisplayMode(self, mode):
         return "Default"
 
     def _openTaskPanel(self, vobj, deleteOnReject):
-        Path.Log.track()
+        logger.track()
         self.panel = TaskPanel(vobj, deleteOnReject)
         FreeCADGui.Control.closeDialog()
         FreeCADGui.Control.showDialog(self.panel)
         self.panel.setupUi()
 
     def setCreate(self, vobj):
-        Path.Log.track()
+        logger.track()
         self._openTaskPanel(vobj, True)
 
     def setEdit(self, vobj, mode=0):

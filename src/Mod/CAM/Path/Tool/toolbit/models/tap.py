@@ -35,7 +35,7 @@ class ToolBitTap(ToolBit, CuttingToolMixin, RotaryToolBitMixin):
     def __init__(
         self, shape: ToolBitShapeTap, id: str | None = None, attrs: Optional[Mapping] = None
     ):
-        Path.Log.track(f"ToolBitTap __init__ called with shape: {shape}, id: {id}")
+        logger.track(f"ToolBitTap __init__ called with shape: {shape}, id: {id}")
         super().__init__(shape, id=id, attrs=attrs)
         self._init_cutting_properties(self.obj)
 

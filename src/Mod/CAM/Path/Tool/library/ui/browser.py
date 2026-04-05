@@ -39,8 +39,7 @@ from ...toolbit.ui.typefilter import ToolBitTypeFilterMixin
 from ...toolbit.serializers import YamlToolBitSerializer
 from ..models.library import Library
 
-Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
-Path.Log.trackModule(Path.Log.thisModule())
+logger = Path.Log.getModuleLogger(withLevel=Path.Log.Level.INFO, enableTracking=True)
 
 
 class LibraryBrowserWidget(ToolBitBrowserWidget, ToolBitTypeFilterMixin):
@@ -94,7 +93,7 @@ class LibraryBrowserWidget(ToolBitBrowserWidget, ToolBitTypeFilterMixin):
                 library = self._asset_manager.get(library_uri, store="local", depth=1)
                 self.set_current_library(library)
             except Exception as e:
-                Path.Log.warning(f"Failed to load last tool library: {e}")
+                logger.warning(f"Failed to load last tool library: {e}")
 
     def restore_last_sort_order(self):
         """Sets the sort mode and updates the tool list."""
@@ -140,7 +139,7 @@ class LibraryBrowserWidget(ToolBitBrowserWidget, ToolBitTypeFilterMixin):
                 library = self._asset_manager.get(library_uri, store=self._store_name, depth=1)
                 self.set_current_library(library)
             except FileNotFoundError:
-                Path.Log.error(f"Library {library_uri_str} not found.")
+                logger.error(f"Library {library_uri_str} not found.")
                 self.set_current_library(None)
         else:
             self.set_current_library(None)
@@ -158,7 +157,7 @@ class LibraryBrowserWidget(ToolBitBrowserWidget, ToolBitTypeFilterMixin):
 
     def refresh(self):
         """Refreshes the toolbits for the current library from disk."""
-        Path.Log.debug("refresh(): Fetching and populating toolbits.")
+        logger.debug("refresh(): Fetching and populating toolbits.")
         if self.current_library:
             library_uri = self.current_library.get_uri()
             try:
@@ -166,7 +165,7 @@ class LibraryBrowserWidget(ToolBitBrowserWidget, ToolBitTypeFilterMixin):
                     Library, self._asset_manager.get(library_uri, store=self._store_name, depth=1)
                 )
             except FileNotFoundError:
-                Path.Log.error(f"Library {library_uri} not found.")
+                logger.error(f"Library {library_uri} not found.")
                 self.current_library = None
         self._reload_assets_from_library()
 
@@ -218,7 +217,7 @@ class LibraryBrowserWidget(ToolBitBrowserWidget, ToolBitTypeFilterMixin):
 
     def _add_shortcuts(self):
         """Adds keyboard shortcuts for common actions."""
-        Path.Log.debug("LibraryBrowserWidget._add_shortcuts: Called.")
+        logger.debug("LibraryBrowserWidget._add_shortcuts: Called.")
         super()._add_shortcuts()
 
         cut_action = QAction(self)
@@ -308,7 +307,7 @@ class LibraryBrowserWidget(ToolBitBrowserWidget, ToolBitTypeFilterMixin):
 
         # If the editor was closed with "OK", save the changes
         self._asset_manager.add(toolbit)
-        Path.Log.info(f"Toolbit {toolbit.get_id()} saved.")
+        logger.info(f"Toolbit {toolbit.get_id()} saved.")
         editor._restore_original_schema()
 
         # Also save the library because the tool number may have changed.
@@ -333,11 +332,11 @@ class LibraryBrowserWidget(ToolBitBrowserWidget, ToolBitTypeFilterMixin):
 
     def _on_duplicate_requested(self):
         """Handles duplicate request by duplicating and adding to library."""
-        Path.Log.debug("LibraryBrowserWidget._on_duplicate_requested: Called.\n")
+        logger.debug("LibraryBrowserWidget._on_duplicate_requested: Called.\n")
         uris = self.get_selected_bit_uris()
         library = self.get_current_library()
         if not library or not uris:
-            Path.Log.debug(
+            logger.debug(
                 "LibraryBrowserWidget._on_duplicate_requested: No library or URIs selected. Returning."
             )
             return
@@ -346,7 +345,7 @@ class LibraryBrowserWidget(ToolBitBrowserWidget, ToolBitTypeFilterMixin):
         for uri_string in uris:
             toolbit = cast(ToolBit, self._asset_manager.get(AssetUri(uri_string), depth=0))
             if not toolbit:
-                Path.Log.warning(f"Toolbit {uri_string} not found.\n")
+                logger.warning(f"Toolbit {uri_string} not found.\n")
                 continue
 
             # Change the ID of the toolbit and save it to disk
@@ -400,7 +399,7 @@ class LibraryBrowserWidget(ToolBitBrowserWidget, ToolBitTypeFilterMixin):
                 )
 
         except Exception as e:
-            Path.Log.warning(f"An unexpected error occurred during paste: {e}")
+            logger.warning(f"An unexpected error occurred during paste: {e}")
 
     def _on_copy_paste(self, current_library: Library, serialized_toolbits_data: list):
         """Handles pasting toolbits that were copied."""
@@ -414,7 +413,7 @@ class LibraryBrowserWidget(ToolBitBrowserWidget, ToolBitTypeFilterMixin):
 
             # Get the original toolbit ID from the deserialized data
             original_id = toolbit.id
-            Path.Log.info(f"COPY PASTE: Attempting to paste toolbit with original_id={original_id}")
+            logger.info(f"COPY PASTE: Attempting to paste toolbit with original_id={original_id}")
 
             # Check if toolbit already exists in asset manager
             toolbit_uri = toolbit.get_uri()
@@ -423,10 +422,10 @@ class LibraryBrowserWidget(ToolBitBrowserWidget, ToolBitTypeFilterMixin):
                 existing_toolbit = self._asset_manager.get(
                     toolbit_uri, store=["local", "builtin"], depth=0
                 )
-                Path.Log.info(f"COPY PASTE: Found existing toolbit {original_id}, using reference")
+                logger.info(f"COPY PASTE: Found existing toolbit {original_id}, using reference")
             except FileNotFoundError:
                 # Toolbit doesn't exist, save it as new
-                Path.Log.info(f"COPY PASTE: Toolbit {original_id} not found, creating new one")
+                logger.info(f"COPY PASTE: Toolbit {original_id} not found, creating new one")
                 self._asset_manager.add(toolbit)
                 existing_toolbit = toolbit
 
@@ -458,7 +457,7 @@ class LibraryBrowserWidget(ToolBitBrowserWidget, ToolBitTypeFilterMixin):
                 self._asset_manager.get(source_library_uri, store=self._store_name, depth=1),
             )
         except FileNotFoundError:
-            Path.Log.warning(f"Source library {source_library_uri_str} not found.\n")
+            logger.warning(f"Source library {source_library_uri_str} not found.\n")
             return
 
         new_uris = set()
@@ -471,14 +470,14 @@ class LibraryBrowserWidget(ToolBitBrowserWidget, ToolBitTypeFilterMixin):
 
             # Get the original toolbit ID and find the existing toolbit
             original_id = toolbit.id
-            Path.Log.info(f"CUT PASTE: Moving toolbit with original_id={original_id}")
+            logger.info(f"CUT PASTE: Moving toolbit with original_id={original_id}")
 
             toolbit_uri = toolbit.get_uri()
             try:
                 existing_toolbit = self._asset_manager.get(
                     toolbit_uri, store=["local", "builtin"], depth=0
                 )
-                Path.Log.info(f"CUT PASTE: Found existing toolbit {original_id}, using reference")
+                logger.info(f"CUT PASTE: Found existing toolbit {original_id}, using reference")
 
                 # Remove from source library, add to target library
                 source_library.remove_bit(existing_toolbit)
@@ -486,7 +485,7 @@ class LibraryBrowserWidget(ToolBitBrowserWidget, ToolBitTypeFilterMixin):
                 if added_toolbit:
                     new_uris.add(str(existing_toolbit.get_uri()))
             except FileNotFoundError:
-                Path.Log.warning(f"CUT PASTE: Toolbit {original_id} not found in asset manager")
+                logger.warning(f"CUT PASTE: Toolbit {original_id} not found in asset manager")
 
         if new_uris:
             # Save the modified libraries
@@ -497,7 +496,7 @@ class LibraryBrowserWidget(ToolBitBrowserWidget, ToolBitTypeFilterMixin):
 
     def _on_remove_from_library_requested(self):
         """Handles request to remove selected toolbits from the current library."""
-        Path.Log.debug("_on_remove_from_library_requested: Called.")
+        logger.debug("_on_remove_from_library_requested: Called.")
         uris = self.get_selected_bit_uris()
         library = self.get_current_library()
         if not library or not uris:
@@ -526,7 +525,7 @@ class LibraryBrowserWidget(ToolBitBrowserWidget, ToolBitTypeFilterMixin):
                 library.remove_bit_by_uri(uri_string)
                 removed_count += 1
             except Exception as e:
-                Path.Log.error(f"Failed to remove toolbit {uri_string} from library: {e}\n")
+                logger.error(f"Failed to remove toolbit {uri_string} from library: {e}\n")
 
         if removed_count > 0:
             self._asset_manager.add(library)
@@ -600,7 +599,7 @@ class LibraryBrowserWithCombo(LibraryBrowserWidget):
                 if lib and lib.get_uri() == self.current_library.get_uri():
                     self._library_combo.setCurrentIndex(i)
                     return
-            Path.Log.warning(
+            logger.warning(
                 f"Current library {self.current_library.get_uri()} not found in combo box."
             )
         else:
@@ -610,7 +609,7 @@ class LibraryBrowserWithCombo(LibraryBrowserWidget):
 
     def refresh(self):
         """Reads available libraries and refreshes the combo box and toolbits."""
-        Path.Log.debug("refresh(): Fetching and populating libraries and toolbits.")
+        logger.debug("refresh(): Fetching and populating libraries and toolbits.")
         libraries = self._asset_manager.fetch("toolbitlibrary", store=self._store_name, depth=0)
         self._in_refresh = True
         try:

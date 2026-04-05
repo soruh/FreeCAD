@@ -22,6 +22,8 @@ import FreeCAD
 import Path
 from typing import Any, Dict, List, Optional
 
+logger = Path.Log.getModuleLogger()
+
 
 class DetachedDocumentObject:
     """
@@ -122,7 +124,7 @@ class DetachedDocumentObject:
 
         # Store the (potentially converted) value
         self._properties[name] = value
-        Path.Log.debug(
+        logger.debug(
             f"DetachedDocumentObject: Set property '{name}' to "
             f"value {value} (type: {type(value)})"
         )
@@ -193,7 +195,7 @@ class DetachedDocumentObject:
                 setattr(obj, prop_name, prop_value)
 
             except Exception as e:
-                Path.Log.error(
+                logger.error(
                     f"Error setting property {prop_name} to {prop_value} "
                     f"(type: {type(prop_value)}, expected type: {prop_type}): {e}"
                 )

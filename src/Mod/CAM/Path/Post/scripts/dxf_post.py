@@ -53,12 +53,7 @@ now = datetime.datetime.now()
 # # These globals set common customization preferences
 OUTPUT_HEADER = True
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
-Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 def processArguments(argstring):
@@ -100,7 +95,7 @@ def parse(pathobj):
     # Gotta start somewhere.  Assume 0,0,0
     curPoint = FreeCAD.Vector(0, 0, 0)
     for c in PathUtils.getPathWithPlacement(pathobj).Commands:
-        Path.Log.debug("{} -> {}".format(curPoint, c))
+        logger.debug("{} -> {}".format(curPoint, c))
         if "Z" in c.Parameters:
             newparams = c.Parameters
             newparams.pop("Z", None)
@@ -111,7 +106,7 @@ def parse(pathobj):
 
         # ignore gcode that isn't moving
         if flatcommand.Name not in feedcommands + rapidcommands:
-            Path.Log.debug("non move")
+            logger.debug("non move")
             continue
 
         # ignore pure vertical feed and rapid
@@ -119,13 +114,13 @@ def parse(pathobj):
             flatcommand.Parameters.get("X", curPoint.x) == curPoint.x
             and flatcommand.Parameters.get("Y", curPoint.y) == curPoint.y
         ):
-            Path.Log.debug("vertical")
+            logger.debug("vertical")
             continue
 
         # feeding move.  Build an edge
         if flatcommand.Name in feedcommands:
             edges.append(Path.Geom.edgeForCmd(flatcommand, curPoint))
-            Path.Log.debug("feeding move")
+            logger.debug("feeding move")
 
         # update the curpoint
         curPoint.x = flatcommand.Parameters.get("X", curPoint.x)

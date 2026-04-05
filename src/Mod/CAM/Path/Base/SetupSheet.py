@@ -34,11 +34,7 @@ __doc__ = "A container for all default values and job specific configuration val
 _RegisteredOps: dict = {}
 
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class Template:
@@ -72,20 +68,20 @@ class Template:
 
 
 def _traverseTemplateAttributes(attrs, codec):
-    Path.Log.debug(attrs)
+    logger.debug(attrs)
     coded = {}
     for key, value in attrs.items():
         if type(value) == dict:
-            Path.Log.debug("%s is a dict" % key)
+            logger.debug("%s is a dict" % key)
             coded[key] = _traverseTemplateAttributes(value, codec)
         elif type(value) == list:
-            Path.Log.debug("%s is a list" % key)
+            logger.debug("%s is a list" % key)
             coded[key] = [_traverseTemplateAttributes(attr, codec) for attr in value]
         elif isinstance(value, str):
-            Path.Log.debug("%s is a string" % key)
+            logger.debug("%s is a string" % key)
             coded[key] = codec(value)
         else:
-            Path.Log.debug("%s is %s" % (key, type(value)))
+            logger.debug("%s is %s" % (key, type(value)))
             coded[key] = value
     return coded
 
@@ -365,7 +361,7 @@ class SetupSheet:
         return list(sorted(ops))
 
     def setOperationProperties(self, obj, opName):
-        Path.Log.track(obj.Label, opName)
+        logger.track(obj.Label, opName)
         try:
             op = _RegisteredOps[opName]
             for prop in op.properties():
@@ -373,7 +369,7 @@ class SetupSheet:
                 if hasattr(self.obj, propName):
                     setattr(obj, prop, getattr(self.obj, propName))
         except Exception:
-            Path.Log.info("SetupSheet has no support for {}".format(opName))
+            logger.info("SetupSheet has no support for {}".format(opName))
 
     def onDocumentRestored(self, obj):
 

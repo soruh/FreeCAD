@@ -31,11 +31,7 @@ from PySide.QtCore import QT_TRANSLATE_NOOP
 
 __doc__ = "Class and implementation of CAM Engrave operation"
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 # lazily loaded modules
 from lazy_loader.lazy_loader import LazyLoader
@@ -87,13 +83,13 @@ class ObjectEngrave(PathEngraveBase.ObjectOp):
 
     def opExecute(self, obj):
         """opExecute(obj) ... process engraving operation"""
-        Path.Log.track()
+        logger.track()
 
         jobshapes = []
 
         if obj.Base:
             # user has selected specific subelements
-            Path.Log.track(len(obj.Base))
+            logger.track(len(obj.Base))
             for base, subs in obj.Base:
                 edges = []
                 wires = []
@@ -113,28 +109,28 @@ class ObjectEngrave(PathEngraveBase.ObjectOp):
             jobshapes.extend([base.Shape for base in obj.BaseShapes])
         else:
             # process all objects in Job.Model.Group
-            Path.Log.track(self.model)
+            logger.track(self.model)
             for base in self.model:
-                Path.Log.track(base.Label)
+                logger.track(base.Label)
                 if base.isDerivedFrom("Part::Feature") and base.Shape.Volume == 0:
                     jobshapes.append(base.Shape)
 
         if jobshapes:
-            Path.Log.debug("processing {} jobshapes".format(len(jobshapes)))
+            logger.debug("processing {} jobshapes".format(len(jobshapes)))
             wires = []
             for shape in jobshapes:
                 if isinstance(shape, Part.Edge):
                     shapeWires = [Part.Wire(shape)]
                 else:
                     shapeWires = shape.Wires
-                Path.Log.debug("jobshape has {} edges".format(len(shape.Edges)))
+                logger.debug("jobshape has {} edges".format(len(shape.Edges)))
                 self.commandlist.append(
                     Path.Command("G0", {"Z": obj.ClearanceHeight.Value, "F": self.vertRapid})
                 )
                 self.buildpathocc(obj, shapeWires, self.getZValues(obj))
                 wires.extend(shapeWires)
             self.wires = wires
-            Path.Log.debug("processing {} jobshapes -> {} wires".format(len(jobshapes), len(wires)))
+            logger.debug("processing {} jobshapes -> {} wires".format(len(jobshapes), len(wires)))
         # the last command is a move to clearance, which is automatically added by PathOp
         if self.commandlist:
             self.commandlist.pop()

@@ -27,12 +27,14 @@ import FreeCADGui
 import Path
 from Path.Tool.toolbit.ui import ToolBitEditorPanel
 
+logger = Path.Log.getModuleLogger()
+
 
 class TaskPanel:
     """TaskPanel for the SetupSheet - if it is being edited directly."""
 
     def __init__(self, vobj, deleteOnReject):
-        Path.Log.track(vobj.Object.Label)
+        logger.track(vobj.Object.Label)
         self.vobj = vobj
         self.obj = vobj.Object
         self.editor = ToolBitEditorPanel(self.obj, self.editor.form)
@@ -59,7 +61,7 @@ class TaskPanel:
         FreeCAD.ActiveDocument.recompute()
 
     def updateUI(self):
-        Path.Log.track()
+        logger.track()
         self.editor.updateUI()
 
     def updateModel(self):

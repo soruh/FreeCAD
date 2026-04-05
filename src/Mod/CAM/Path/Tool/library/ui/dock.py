@@ -38,11 +38,7 @@ from ...toolbit import ToolBit
 from .editor import LibraryEditor
 from .browser import LibraryBrowserWithCombo
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 translate = FreeCAD.Qt.translate
@@ -73,7 +69,7 @@ class ToolBitLibraryDock(object):
 
     def _setup_ui(self):
         """Setup the form and load the tooltable data"""
-        Path.Log.track()
+        logger.track()
 
         # Create a main widget and layout for the dock
         main_widget = QtGui.QWidget()
@@ -144,7 +140,7 @@ class ToolBitLibraryDock(object):
         """
         Get the selected toolbit assets from the browser widget.
         """
-        Path.Log.track()
+        logger.track()
         tools = []
         selected_toolbits = self.browser_widget.get_selected_bits()
 
@@ -156,7 +152,7 @@ class ToolBitLibraryDock(object):
                 toolbit.attach_to_doc(FreeCAD.ActiveDocument)
                 tools.append((toolNr, toolbit))
             else:
-                Path.Log.warning(
+                logger.warning(
                     f"Could not get tool number for toolbit {toolbit.get_uri()} in selected library."
                 )
 
@@ -167,7 +163,7 @@ class ToolBitLibraryDock(object):
         if no jobs, don't do anything, otherwise all TCs for all
         selected toolbit assets
         """
-        Path.Log.track()
+        logger.track()
         jobs = PathUtilsGui.PathUtils.GetJobs()
         if len(jobs) == 0:
             QtGui.QMessageBox.information(

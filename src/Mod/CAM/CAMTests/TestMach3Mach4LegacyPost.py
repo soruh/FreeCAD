@@ -28,8 +28,7 @@ import Path
 import CAMTests.PathTestUtils as PathTestUtils
 from Path.Post.scripts import mach3_mach4_legacy_post as postprocessor
 
-Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-Path.Log.trackModule(Path.Log.thisModule())
+logger = Path.Log.getModuleLogger(withLevel=Path.Log.Level.DEBUG, enableTracking=True)
 
 
 class TestMach3Mach4LegacyPost(PathTestUtils.PathTestBase):

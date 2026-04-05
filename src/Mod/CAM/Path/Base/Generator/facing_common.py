@@ -33,11 +33,7 @@ import FreeCAD
 import Path
 import Part
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 def extract_polygon_geometry(polygon):
@@ -208,7 +204,7 @@ def get_angled_polygon(wire, angle):
     center = wire.BoundBox.Center
     rotation_axis = FreeCAD.Vector(0, 0, 1)  # Z-axis
 
-    Path.Log.debug(f"Original wire center: {center}")
+    logger.debug(f"Original wire center: {center}")
 
     # Step 1: Rotate the wire in the opposite direction to align optimally with axes
     temp_wire = wire.copy()
@@ -216,7 +212,7 @@ def get_angled_polygon(wire, angle):
 
     # Step 2: Get the axis-aligned bounding box of the rotated wire
     bounding_box = temp_wire.BoundBox
-    Path.Log.debug(f"Rotated bounding box center: {bounding_box.Center}")
+    logger.debug(f"Rotated bounding box center: {bounding_box.Center}")
 
     # Create the four corners of the bounding box rectangle
     corners = [
@@ -277,11 +273,11 @@ def validate_inputs(
     if stepover_percent <= 0:
         raise ValueError("Stepover percentage must be positive")
     if stepover_percent > 100:
-        Path.Log.warning(f"Stepover percentage ({stepover_percent}%) is greater than 100%")
+        logger.warning(f"Stepover percentage ({stepover_percent}%) is greater than 100%")
     if stepover_percent > 200:
         raise ValueError("Stepover percentage too large (>200%)")
     if stepover_percent < 1:
-        Path.Log.warning(
+        logger.warning(
             f"Very small stepover percentage ({stepover_percent}%) may result in excessive cutting time"
         )
 

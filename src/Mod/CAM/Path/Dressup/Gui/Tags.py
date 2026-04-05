@@ -32,11 +32,7 @@ import Path.Dressup.Tags as PathDressupTag
 import PathScripts.PathUtils as PathUtils
 import Path.Dressup.Utils as PathDressup
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 translate = FreeCAD.Qt.translate
 
@@ -161,7 +157,7 @@ class PathDressupTagTaskPanel:
             self.isDirty = True
 
     def updateTagsView(self):
-        Path.Log.track()
+        logger.track()
         self.form.lwTags.blockSignals(True)
         self.form.lwTags.clear()
         for i, pos in enumerate(self.Positions):
@@ -186,7 +182,7 @@ class PathDressupTagTaskPanel:
 
     def generateNewTags(self):
         count = self.form.sbCount.value()
-        Path.Log.track(count)
+        logger.track(count)
         if not self.obj.Proxy.generateTags(self.obj, count):
             self.obj.Proxy.execute(self.obj)
         self.Positions = self.obj.Positions
@@ -203,7 +199,7 @@ class PathDressupTagTaskPanel:
             self.Disabled = self.obj.Disabled
             self.updateTagsView()
         else:
-            Path.Log.error("Cannot copy tags - internal error")
+            logger.error("Cannot copy tags - internal error")
 
     def updateModel(self):
         self.getFields()
@@ -215,7 +211,7 @@ class PathDressupTagTaskPanel:
         self.form.pbGenerate.setEnabled(count)
 
     def selectTagWithId(self, index):
-        Path.Log.track(index)
+        logger.track(index)
         self.form.lwTags.setCurrentRow(index)
 
     def whenTagSelectionChanged(self):
@@ -239,18 +235,18 @@ class PathDressupTagTaskPanel:
 
     def addNewTagAt(self, point, obj):
         if point and obj and self.obj.Proxy.pointIsOnPath(self.obj, point):
-            Path.Log.info("addNewTagAt(%.2f, %.2f)" % (point.x, point.y))
+            logger.info("addNewTagAt(%.2f, %.2f)" % (point.x, point.y))
             self.Positions.append(FreeCAD.Vector(point.x, point.y, 0))
             self.updateTagsView()
         else:
-            Path.Log.notice("ignore new tag at %s (obj=%s, on-path=%d" % (point, obj, 0))
+            logger.notice("ignore new tag at %s (obj=%s, on-path=%d" % (point, obj, 0))
 
     def addNewTag(self):
         self.tags = self.getTags(True)
         self.getPoint.getPoint(self.addNewTagAt)
 
     def editTagAt(self, point, obj):
-        Path.Log.track(point, obj)
+        logger.track(point, obj)
         if point and self.obj.Proxy.pointIsOnPath(self.obj, point):
             tags = []
             for i, (x, y, enabled) in enumerate(self.tags):
@@ -356,7 +352,7 @@ class HoldingTagMarker:
 
 class PathDressupTagViewProvider:
     def __init__(self, vobj):
-        Path.Log.track()
+        logger.track()
         self.vobj = vobj
         self.panel = None
 
@@ -404,7 +400,7 @@ class PathDressupTagViewProvider:
         ]
 
     def attach(self, vobj):
-        Path.Log.track()
+        logger.track()
         self.setupColors()
         self.vobj = vobj
         self.obj = vobj.Object
@@ -427,14 +423,14 @@ class PathDressupTagViewProvider:
         self.switch.whichChild = sw
 
     def claimChildren(self):
-        Path.Log.track()
+        logger.track()
         # if self.debugDisplay():
         #    return [self.obj.Base, self.vobj.Debug]
         return [self.obj.Base]
 
     def onDelete(self, arg1=None, arg2=None):
         """this makes sure that the base operation is added back to the job and visible"""
-        Path.Log.track()
+        logger.track()
         if self.obj.Base and self.obj.Base.ViewObject:
             self.obj.Base.ViewObject.Visibility = True
         job = PathUtils.findParentJob(self.obj)
@@ -459,12 +455,12 @@ class PathDressupTagViewProvider:
         self.tags = tags
 
     def updateData(self, obj, propName):
-        Path.Log.track(propName)
+        logger.track(propName)
         if "Disabled" == propName:
             self.updatePositions(obj.Positions, obj.Disabled)
 
     def onModelChanged(self):
-        Path.Log.track()
+        logger.track()
         # if self.debugDisplay():
         #    self.vobj.Debug.removeObjectsFromDocument()
         #    for solid in self.obj.Proxy.solids:
@@ -502,7 +498,7 @@ class PathDressupTagViewProvider:
     # SelectionObserver interface
 
     def selectTag(self, index):
-        Path.Log.track(index)
+        logger.track(index)
         for i, tag in enumerate(self.tags):
             tag.setSelected(i == index)
 
@@ -524,7 +520,7 @@ class PathDressupTagViewProvider:
         return False
 
     def addSelection(self, doc, obj, sub, point):
-        Path.Log.track(doc, obj, sub, point)
+        logger.track(doc, obj, sub, point)
         if hasattr(self, "panel") and self.panel:
             i = self.tagAtPoint(point, sub is None)
             self.panel.selectTagWithId(i)
@@ -581,4 +577,4 @@ if FreeCAD.GuiUp:
     # register the FreeCAD command
     FreeCADGui.addCommand("CAM_DressupTag", CommandPathDressupTag())
 
-Path.Log.notice("Loading PathDressupTagGui... done\n")
+logger.notice("Loading PathDressupTagGui... done\n")

@@ -26,11 +26,7 @@ import subprocess
 
 LOGLEVEL = False
 
-if LOGLEVEL:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, LOGLEVEL)
 
 Processed = False
 
@@ -38,7 +34,7 @@ Processed = False
 def Startup():
     global Processed
     if not Processed:
-        Path.Log.debug("Initializing PathGui")
+        logger.debug("Initializing PathGui")
         from Path.Base.Gui import PropertyBag
         from Path.Base.Gui import SetupSheet
         from Path.Dressup.Gui import Array
@@ -105,4 +101,4 @@ def Startup():
 
         Processed = True
     else:
-        Path.Log.debug("Skipping PathGui initialisation")
+        logger.debug("Skipping PathGui initialisation")
