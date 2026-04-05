@@ -38,7 +38,7 @@ translate = FreeCAD.Qt.translate
 
 
 def addDebugDisplay():
-    return Path.Log.getLevel(Path.Log.thisModule()) == Path.Log.Level.DEBUG
+    return logger.getLevel() == Path.Log.Level.DEBUG
 
 
 class PathDressupTagTaskPanel:

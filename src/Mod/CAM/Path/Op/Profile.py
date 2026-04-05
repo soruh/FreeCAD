@@ -452,7 +452,7 @@ class ObjectProfile(PathAreaOp.ObjectOp):
 
         shapes = []
         remainingObjBaseFeatures = []
-        self.isDebug = True if Path.Log.getLevel(Path.Log.thisModule()) == 4 else False
+        self.isDebug = True if logger.getLevel() == 4 else False
         self.inaccessibleMsg = translate(
             "PathProfile",
             "The selected edge(s) are inaccessible. If multiple, re-ordering selection might work.",

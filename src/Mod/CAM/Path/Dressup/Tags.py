@@ -42,7 +42,7 @@ translate = FreeCAD.Qt.translate
 
 
 def debugEdge(edge, prefix, force=False):
-    if force or Path.Log.getLevel(Path.Log.thisModule()) == Path.Log.Level.DEBUG:
+    if force or logger.getLevel() == Path.Log.Level.DEBUG:
         pf = edge.valueAt(edge.FirstParameter)
         pl = edge.valueAt(edge.LastParameter)
         if type(edge.Curve) in [Part.Line, Part.LineSegment]:
@@ -71,7 +71,7 @@ def debugEdge(edge, prefix, force=False):
 
 
 def debugMarker(vector, label, color=None, radius=0.5):
-    if Path.Log.getLevel(Path.Log.thisModule()) == Path.Log.Level.DEBUG:
+    if logger.getLevel() == Path.Log.Level.DEBUG:
         obj = FreeCAD.ActiveDocument.addObject("Part::Sphere", label)
         obj.Label = label
         obj.Radius = radius
@@ -81,7 +81,7 @@ def debugMarker(vector, label, color=None, radius=0.5):
 
 
 def debugCylinder(vector, r, height, label, color=None):
-    if Path.Log.getLevel(Path.Log.thisModule()) == Path.Log.Level.DEBUG:
+    if logger.getLevel() == Path.Log.Level.DEBUG:
         obj = FreeCAD.ActiveDocument.addObject("Part::Cylinder", label)
         obj.Label = label
         obj.Radius = r
@@ -93,7 +93,7 @@ def debugCylinder(vector, r, height, label, color=None):
 
 
 def debugCone(vector, r1, r2, height, label, color=None):
-    if Path.Log.getLevel(Path.Log.thisModule()) == Path.Log.Level.DEBUG:
+    if logger.getLevel() == Path.Log.Level.DEBUG:
         obj = FreeCAD.ActiveDocument.addObject("Part::Cone", label)
         obj.Label = label
         obj.Radius1 = r1
@@ -1242,7 +1242,7 @@ class ObjectTagDressup:
     @waiting_effects
     def processTags(self, obj):
         tagID = 0
-        if Path.Log.getLevel(Path.Log.thisModule()) == Path.Log.Level.DEBUG:
+        if logger.getLevel() == Path.Log.Level.DEBUG:
             for tag in self.tags:
                 tagID += 1
                 if tag.enabled:

@@ -89,7 +89,7 @@ class ObjectSurface(PathOp.ObjectOp):
         self.initOpProperties(obj)  # Initialize operation-specific properties
 
         # For debugging
-        if Path.Log.getLevel(Path.Log.thisModule()) != 4:
+        if logger.getLevel() != 4:
             obj.setEditorMode("ShowTempObjects", 2)  # hide
 
         if not hasattr(obj, "DoNotSetDefaultValues"):
@@ -587,7 +587,7 @@ class ObjectSurface(PathOp.ObjectOp):
         self.initOpProperties(obj, warn=True)
         self.opApplyPropertyDefaults(obj, job, self.addNewProps)
 
-        mode = 2 if Path.Log.getLevel(Path.Log.thisModule()) != 4 else 0
+        mode = 2 if logger.getLevel() != 4 else 0
         obj.setEditorMode("ShowTempObjects", mode)
 
         # Repopulate enumerations in case of changes
@@ -755,7 +755,7 @@ class ObjectSurface(PathOp.ObjectOp):
         self.showDebugObjects = False  # Set to true if you want a visual DocObjects created for some path construction objects
         self.showDebugObjects = obj.ShowTempObjects
         deleteTempsFlag = True  # Set to False for debugging
-        if Path.Log.getLevel(Path.Log.thisModule()) == 4:
+        if logger.getLevel() == 4:
             deleteTempsFlag = False
         else:
             self.showDebugObjects = False

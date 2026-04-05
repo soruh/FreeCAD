@@ -182,7 +182,7 @@ class ObjectPocket(PathPocketBase.ObjectPocket):
         logger.track()
         self.removalshapes = []
 
-        # self.isDebug = True if Path.Log.getLevel(Path.Log.thisModule()) == 4 else False
+        # self.isDebug = True if logger.getLevel() == 4 else False
         self.removalshapes = []
         avoidFeatures = list()
 

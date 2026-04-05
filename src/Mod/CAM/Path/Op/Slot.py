@@ -74,7 +74,7 @@ class ObjectSlot(PathOp.ObjectOp):
         self.initOpProperties(obj)  # Initialize operation-specific properties
 
         # For debugging
-        if Path.Log.getLevel(Path.Log.thisModule()) != 4:
+        if logger.getLevel() != 4:
             obj.setEditorMode("ShowTempObjects", 2)  # hide
 
         if not hasattr(obj, "DoNotSetDefaultValues"):
@@ -402,7 +402,7 @@ class ObjectSlot(PathOp.ObjectOp):
         self.initOpProperties(obj, warn=True)
         self.opApplyPropertyDefaults(obj, job, self.addNewProps)
 
-        mode = 2 if Path.Log.getLevel(Path.Log.thisModule()) != 4 else 0
+        mode = 2 if logger.getLevel() != 4 else 0
         obj.setEditorMode("ShowTempObjects", mode)
 
         # Repopulate enumerations in case of changes
@@ -505,7 +505,7 @@ class ObjectSlot(PathOp.ObjectOp):
         self.stockZMin = self.job.Stock.Shape.BoundBox.ZMin
 
         # Debug settings
-        self.isDebug = Path.Log.getLevel(Path.Log.thisModule()) == 4
+        self.isDebug = logger.getLevel() == 4
         self.showDebugObjects = self.isDebug and obj.ShowTempObjects
 
         if self.showDebugObjects:
