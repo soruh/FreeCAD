@@ -42,11 +42,7 @@ __url__ = "https://www.freecad.org"
 __doc__ = "CAM Drilling operation."
 __contributors__ = "IMBack!"
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 translate = FreeCAD.Qt.translate
 
@@ -84,11 +80,11 @@ class ObjectDrilling(PathCircularHoleBase.ObjectOp):
         data = list()
         idx = 0 if dataType == "translated" else 1
 
-        Path.Log.debug(enums)
+        logger.debug(enums)
 
         for k, v in enumerate(enums):
             data.append((v, [tup[idx] for tup in enums[v]]))
-        Path.Log.debug(data)
+        logger.debug(data)
 
         return data
 
@@ -143,7 +139,7 @@ class ObjectDrilling(PathCircularHoleBase.ObjectOp):
         if hasattr(obj, "RetractHeight"):
             # If RetractHeight was higher than StartDepth, migrate to StartDepth
             if obj.RetractHeight.Value > obj.StartDepth.Value:
-                Path.Log.warning(
+                logger.warning(
                     f"Migrating RetractHeight ({obj.RetractHeight.Value}) to StartDepth. "
                     f"Old StartDepth was {obj.StartDepth.Value}"
                 )
@@ -250,7 +246,7 @@ class ObjectDrilling(PathCircularHoleBase.ObjectOp):
 
     def circularHoleExecute(self, obj, holes):
         """circularHoleExecute(obj, holes) ... generate operation for each hole based on strategy."""
-        Path.Log.track()
+        logger.track()
 
         strategy = obj.Strategy if hasattr(obj, "Strategy") else "Drilling"
 
@@ -259,11 +255,11 @@ class ObjectDrilling(PathCircularHoleBase.ObjectOp):
         elif strategy == "Tapping":
             self._executeTapping(obj, holes)
         else:
-            Path.Log.error(f"Unknown strategy: {strategy}")
+            logger.error(f"Unknown strategy: {strategy}")
 
     def _executeDrilling(self, obj, holes):
         """_executeDrilling(obj, holes) ... generate drilling operation for each hole in holes."""
-        Path.Log.track()
+        logger.track()
         machinestate = PathMachineState.MachineState()
         # We should be at clearance height.
 
@@ -272,7 +268,7 @@ class ObjectDrilling(PathCircularHoleBase.ObjectOp):
         # Validate that SafeHeight doesn't exceed ClearanceHeight
         safe_height = obj.SafeHeight.Value
         if safe_height > obj.ClearanceHeight.Value:
-            Path.Log.warning(
+            logger.warning(
                 f"SafeHeight ({safe_height}) is above ClearanceHeight ({obj.ClearanceHeight.Value}). "
                 f"Using ClearanceHeight instead."
             )
@@ -318,7 +314,7 @@ class ObjectDrilling(PathCircularHoleBase.ObjectOp):
         # iterate the edgelist and generate gcode
         firstMove = True
         for edge in edgelist:
-            Path.Log.debug(edge)
+            logger.debug(edge)
 
             # Get the target start point
             startPoint = edge.Vertexes[0].Point
@@ -377,7 +373,7 @@ class ObjectDrilling(PathCircularHoleBase.ObjectOp):
                 )
 
             except ValueError as e:  # any targets that fail the generator are ignored
-                Path.Log.info(e)
+                logger.info(e)
                 continue
 
             # Set RetractMode annotation for each command
@@ -402,11 +398,11 @@ class ObjectDrilling(PathCircularHoleBase.ObjectOp):
 
     def _executeTapping(self, obj, holes):
         """_executeTapping(obj, holes) ... generate tapping operation for each hole in holes."""
-        Path.Log.track()
+        logger.track()
         machinestate = PathMachineState.MachineState()
 
         if not hasattr(obj.ToolController.Tool, "Pitch"):
-            Path.Log.error(
+            logger.error(
                 translate(
                     "CAM_Drilling",
                     "Tapping strategy requires a Tap tool with Pitch",
@@ -422,7 +418,7 @@ class ObjectDrilling(PathCircularHoleBase.ObjectOp):
         # Validate that SafeHeight doesn't exceed ClearanceHeight
         safe_height = obj.SafeHeight.Value
         if safe_height > obj.ClearanceHeight.Value:
-            Path.Log.warning(
+            logger.warning(
                 f"SafeHeight ({safe_height}) is above ClearanceHeight ({obj.ClearanceHeight.Value}). "
                 f"Using ClearanceHeight instead."
             )
@@ -451,7 +447,7 @@ class ObjectDrilling(PathCircularHoleBase.ObjectOp):
         # iterate the edgelist and generate gcode
         firstMove = True
         for edge in edgelist:
-            Path.Log.debug(edge)
+            logger.debug(edge)
 
             # Get the target start point
             startPoint = edge.Vertexes[0].Point
@@ -479,7 +475,7 @@ class ObjectDrilling(PathCircularHoleBase.ObjectOp):
             # Get pitch in mm as a float (no unit string)
             pitch = getattr(obj.ToolController.Tool, "Pitch", None)
             if pitch is None or pitch == 0:
-                Path.Log.error(
+                logger.error(
                     translate(
                         "CAM_Drilling",
                         "Tapping strategy requires a Tap tool with non-zero Pitch",
@@ -489,7 +485,7 @@ class ObjectDrilling(PathCircularHoleBase.ObjectOp):
 
             spindle_speed = getattr(obj.ToolController, "SpindleSpeed", None)
             if spindle_speed is None or spindle_speed == 0:
-                Path.Log.error(
+                logger.error(
                     translate(
                         "CAM_Drilling",
                         "Tapping strategy requires a ToolController with non-zero SpindleSpeed",
@@ -512,7 +508,7 @@ class ObjectDrilling(PathCircularHoleBase.ObjectOp):
                 )
 
             except ValueError as e:  # any targets that fail the generator are ignored
-                Path.Log.info(e)
+                logger.info(e)
                 continue
 
             # Set RetractMode annotation for each command

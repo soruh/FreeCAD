@@ -43,11 +43,7 @@ __url__ = "https://www.freecad.org"
 __doc__ = "Class and implementation of shape based Pocket operation."
 
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class ObjectPocket(PathPocketBase.ObjectPocket):
@@ -75,12 +71,12 @@ class ObjectPocket(PathPocketBase.ObjectPocket):
 
         # Adaptive tolerance based on face size
         adaptive_tolerance = max(1e-6, min(1e-2, face.BoundBox.DiagonalLength * 1e-5))
-        Path.Log.debug(
+        logger.debug(
             f"removeHoles: Using adaptive tolerance {adaptive_tolerance} (face diagonal: {face.BoundBox.DiagonalLength})"
         )
 
         for i, w in enumerate(candidate_wires):
-            Path.Log.debug(f"  Candidate {i}: Length={w.Length}")
+            logger.debug(f"  Candidate {i}: Length={w.Length}")
 
         if not candidate_wires:
             return face
@@ -116,9 +112,9 @@ class ObjectPocket(PathPocketBase.ObjectPocket):
                         # ignore any wires that can't be built
                         pass
 
-                Path.Log.debug(f"removeHoles: Section found {len(all_section_wires)} wires")
+                logger.debug(f"removeHoles: Section found {len(all_section_wires)} wires")
                 for i, w in enumerate(all_section_wires):
-                    Path.Log.debug(f"  Section wire {i}: Length={w.Length}")
+                    logger.debug(f"  Section wire {i}: Length={w.Length}")
 
                 # Filter out outer wire, keep remaining as boss wires
                 for wire in all_section_wires:
@@ -126,27 +122,27 @@ class ObjectPocket(PathPocketBase.ObjectPocket):
                         length_diff = abs(wire.Length - outer_wire.Length)
                         if length_diff > adaptive_tolerance:
                             boss_wires.append(wire)
-                            Path.Log.debug(
+                            logger.debug(
                                 f"  Preserving boss wire: Length={wire.Length}, diff={length_diff}"
                             )
                         else:
-                            Path.Log.debug(
+                            logger.debug(
                                 f"  Discarding wire (too similar to outer): Length={wire.Length}, diff={length_diff}"
                             )
 
         except Exception as e:
-            Path.Log.error("removeHoles: Section algorithm failed: {}".format(e))
+            logger.error("removeHoles: Section algorithm failed: {}".format(e))
             boss_wires = candidate_wires
-            Path.Log.debug("removeHoles: Section failed, preserving all candidate wires as bosses")
+            logger.debug("removeHoles: Section failed, preserving all candidate wires as bosses")
 
-        Path.Log.debug(f"removeHoles: Preserving {len(boss_wires)} boss wires")
+        logger.debug(f"removeHoles: Preserving {len(boss_wires)} boss wires")
         for i, w in enumerate(boss_wires):
-            Path.Log.debug(f"  Preserved boss {i}: Length={w.Length}")
+            logger.debug(f"  Preserved boss {i}: Length={w.Length}")
 
         removed_wires = [w for w in candidate_wires if not any(w.isSame(bw) for bw in boss_wires)]
-        Path.Log.debug(f"removeHoles: Removing {len(removed_wires)} hole wires")
+        logger.debug(f"removeHoles: Removing {len(removed_wires)} hole wires")
         for i, w in enumerate(removed_wires):
-            Path.Log.debug(f"  Removed hole {i}: Length={w.Length}")
+            logger.debug(f"  Removed hole {i}: Length={w.Length}")
 
         # Construct new face with outer wire and boss wires
         wire_compound = Part.makeCompound([outer_wire] + boss_wires)
@@ -183,10 +179,10 @@ class ObjectPocket(PathPocketBase.ObjectPocket):
 
     def areaOpShapes(self, obj):
         """areaOpShapes(obj) ... return shapes representing the solids to be removed."""
-        Path.Log.track()
+        logger.track()
         self.removalshapes = []
 
-        # self.isDebug = True if Path.Log.getLevel(Path.Log.thisModule()) == 4 else False
+        # self.isDebug = True if logger.getLevel() == 4 else False
         self.removalshapes = []
         avoidFeatures = list()
 
@@ -197,20 +193,20 @@ class ObjectPocket(PathPocketBase.ObjectPocket):
                 avoidFeatures.append(e.feature)
 
         if obj.Base:
-            Path.Log.debug("base items exist.  Processing...")
+            logger.debug("base items exist.  Processing...")
             self.horiz = []
             self.vert = []
             for base, subList in obj.Base:
                 for sub in subList:
                     if "Face" in sub:
                         if sub not in avoidFeatures and not self.classifySub(base, sub):
-                            Path.Log.error(
+                            logger.error(
                                 "Pocket does not support shape {}.{}".format(base.Label, sub)
                             )
 
             # Convert horizontal faces to use outline only if requested
-            Path.Log.debug("UseOutline: {}".format(obj.UseOutline))
-            Path.Log.debug("self.horiz: {}".format(self.horiz))
+            logger.debug("UseOutline: {}".format(obj.UseOutline))
+            logger.debug("self.horiz: {}".format(self.horiz))
             if obj.UseOutline and self.horiz:
                 horiz = [self.removeHoles(base, face) for (face, base) in self.horiz]
                 self.horiz = horiz
@@ -230,7 +226,7 @@ class ObjectPocket(PathPocketBase.ObjectPocket):
                     face = Part.Face(w)
                     # face.tessellate(0.1)
                     if Path.Geom.isRoughly(face.Area, 0):
-                        Path.Log.error("Vertical faces do not form a loop - ignoring")
+                        logger.error("Vertical faces do not form a loop - ignoring")
                     else:
                         self.horiz.append(face)
 
@@ -268,7 +264,7 @@ class ObjectPocket(PathPocketBase.ObjectPocket):
             ]
 
         else:  # process the job base object as a whole
-            Path.Log.debug("processing the whole job base object")
+            logger.debug("processing the whole job base object")
             self.outlines = [
                 Part.Face(TechDraw.findShapeOutline(base.Shape, 1, FreeCAD.Vector(0, 0, 1)))
                 for base in self.model
@@ -299,32 +295,32 @@ class ObjectPocket(PathPocketBase.ObjectPocket):
         face = bs.Shape.getElement(sub)
 
         if isinstance(face.Surface, Part.Plane):
-            Path.Log.debug("type() == Part.Plane")
+            logger.debug("type() == Part.Plane")
             if Path.Geom.isVertical(face.Surface.Axis):
-                Path.Log.debug("  -isVertical()")
+                logger.debug("  -isVertical()")
                 # it's a flat horizontal face
                 self.horiz.append((face, bs))
                 return True
 
             elif Path.Geom.isHorizontal(face.Surface.Axis):
-                Path.Log.debug("  -isHorizontal()")
+                logger.debug("  -isHorizontal()")
                 self.vert.append(face)
                 return True
             else:
                 return False
 
         elif isinstance(face.Surface, Part.BSplineSurface):
-            Path.Log.debug("face Part.BSplineSurface")
+            logger.debug("face Part.BSplineSurface")
             if Path.Geom.isRoughly(face.BoundBox.ZLength, 0):
-                Path.Log.debug("  flat horizontal or almost flat horizontal")
+                logger.debug("  flat horizontal or almost flat horizontal")
                 self.horiz.append((face, bs))
                 return True
 
         elif isinstance(face.Surface, Part.Cylinder) and Path.Geom.isVertical(face.Surface.Axis):
-            Path.Log.debug("type() == Part.Cylinder")
+            logger.debug("type() == Part.Cylinder")
             # vertical cylinder wall
             if any(e.isClosed() for e in face.Edges):
-                Path.Log.debug("  -e.isClosed()")
+                logger.debug("  -e.isClosed()")
                 # complete cylinder
                 circle = Part.makeCircle(face.Surface.Radius, face.Surface.Center)
                 disk = Part.Face(Part.Wire(circle))
@@ -333,24 +329,24 @@ class ObjectPocket(PathPocketBase.ObjectPocket):
                 return True
 
             else:
-                Path.Log.debug("  -none isClosed()")
+                logger.debug("  -none isClosed()")
                 # partial cylinder wall
                 self.vert.append(face)
                 return True
 
         elif isinstance(face.Surface, Part.SurfaceOfExtrusion):
             # extrusion wall
-            Path.Log.debug("type() == Part.SurfaceOfExtrusion")
+            logger.debug("type() == Part.SurfaceOfExtrusion")
             if Path.Geom.isRoughly(abs(face.Surface.Direction.z), 1.0):
                 # it's a vertical face
                 self.vert.append(face)
                 return True
             else:
-                Path.Log.error("Failed to identify vertical face from {}".format(sub))
+                logger.error("Failed to identify vertical face from {}".format(sub))
                 return False
 
         else:
-            Path.Log.debug("  -type(face.Surface): {}".format(type(face.Surface)))
+            logger.debug("  -type(face.Surface): {}".format(type(face.Surface)))
             return False
 
 

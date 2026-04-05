@@ -28,11 +28,7 @@ from ...assets import Asset, AssetUri, AssetSerializer
 from ...shape import ToolBitShape
 from ..models.base import ToolBit
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class FCTBSerializer(AssetSerializer):
@@ -47,7 +43,7 @@ class FCTBSerializer(AssetSerializer):
     @classmethod
     def extract_dependencies(cls, data: bytes) -> List[AssetUri]:
         """Extracts URIs of dependencies from serialized data."""
-        Path.Log.debug(f"FCTBSerializer.extract_dependencies: raw data = {data!r}")
+        logger.debug(f"FCTBSerializer.extract_dependencies: raw data = {data!r}")
         data_dict = json.loads(data.decode("utf-8"))
         shape = data_dict["shape"]
         return [ToolBitShape.resolve_name(shape)]
@@ -77,14 +73,14 @@ class FCTBSerializer(AssetSerializer):
         if dependencies is None:
             # Shallow load: dependencies are not resolved.
             # Delegate to from_dict with shallow=True.
-            Path.Log.debug(f"FCTBSerializer.deserialize: shallow. id = {id!r}, attrs = {attrs!r}")
+            logger.debug(f"FCTBSerializer.deserialize: shallow. id = {id!r}, attrs = {attrs!r}")
             return ToolBit.from_dict(attrs, shallow=True)
 
         # Full load: dependencies are resolved.
         # Proceed with existing logic to use the resolved shape.
         shape_id = attrs.get("shape")
         if not shape_id:
-            Path.Log.warning("ToolBit data is missing 'shape' key, defaulting to 'endmill'")
+            logger.warning("ToolBit data is missing 'shape' key, defaulting to 'endmill'")
             shape_id = "endmill"
 
         shape_uri = ToolBitShape.resolve_name(shape_id)

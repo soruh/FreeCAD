@@ -29,6 +29,8 @@ from Machine.models.machine import MachineFactory
 
 translate = FreeCAD.Qt.translate
 
+logger = Path.Log.getModuleLogger()
+
 
 def _is_writable_dir(path: pathlib.Path) -> bool:
     """
@@ -189,7 +191,7 @@ class AssetPreferencesPage:
                 item.setData(QtCore.Qt.UserRole, filename)  # Store filename only
                 self.machines_list.addItem(item)
         except Exception as e:
-            Path.Log.error(f"Failed to create machine file: {e}")
+            logger.error(f"Failed to create machine file: {e}")
 
     def edit_machine(self):
         try:
@@ -206,7 +208,7 @@ class AssetPreferencesPage:
                 if display:
                     item.setText(display)
         except Exception as e:
-            Path.Log.error(f"Failed to open machine editor: {e}")
+            logger.error(f"Failed to open machine editor: {e}")
 
     def delete_machine(self):
         try:
@@ -230,6 +232,6 @@ class AssetPreferencesPage:
             if MachineFactory.delete_configuration(filename):
                 self.machines_list.takeItem(self.machines_list.currentRow())
             else:
-                Path.Log.error("Failed to delete machine file.")
+                logger.error("Failed to delete machine file.")
         except Exception as e:
-            Path.Log.error(f"Failed to delete machine: {e}")
+            logger.error(f"Failed to delete machine: {e}")

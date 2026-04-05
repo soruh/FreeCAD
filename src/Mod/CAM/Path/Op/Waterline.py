@@ -59,11 +59,7 @@ Part = LazyLoader("Part", globals(), "Part")
 if FreeCAD.GuiUp:
     import FreeCADGui
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class ObjectWaterline(PathOp.ObjectOp):
@@ -146,11 +142,11 @@ class ObjectWaterline(PathOp.ObjectOp):
         data = list()
         idx = 0 if dataType == "translated" else 1
 
-        Path.Log.debug(enums)
+        logger.debug(enums)
 
         for k, v in enumerate(enums):
             data.append((v, [tup[idx] for tup in enums[v]]))
-        Path.Log.debug(data)
+        logger.debug(data)
 
         return data
 
@@ -162,7 +158,7 @@ class ObjectWaterline(PathOp.ObjectOp):
         self.initOpProperties(obj)  # Initialize operation-specific properties
 
         # For debugging
-        if Path.Log.getLevel(Path.Log.thisModule()) != 4:
+        if logger.getLevel() != 4:
             obj.setEditorMode("ShowTempObjects", 2)  # hide
 
         if not hasattr(obj, "DoNotSetDefaultValues"):
@@ -584,7 +580,7 @@ class ObjectWaterline(PathOp.ObjectOp):
         self.initOpProperties(obj, warn=True)
         self.opApplyPropertyDefaults(obj, job, self.addNewProps)
 
-        mode = 2 if Path.Log.getLevel(Path.Log.thisModule()) != 4 else 0
+        mode = 2 if logger.getLevel() != 4 else 0
         obj.setEditorMode("ShowTempObjects", mode)
 
         # Repopulate enumerations in case of changes
@@ -629,11 +625,11 @@ class ObjectWaterline(PathOp.ObjectOp):
             if job.Stock:
                 d = PathUtils.guessDepths(job.Stock.Shape, None)
                 obj.IgnoreOuterAbove = job.Stock.Shape.BoundBox.ZMax + 0.000001
-                Path.Log.debug("job.Stock exists")
+                logger.debug("job.Stock exists")
             else:
-                Path.Log.debug("job.Stock NOT exist")
+                logger.debug("job.Stock NOT exist")
         else:
-            Path.Log.debug("job NOT exist")
+            logger.debug("job NOT exist")
 
         if d is not None:
             obj.OpFinalDepth.Value = d.final_depth
@@ -642,15 +638,15 @@ class ObjectWaterline(PathOp.ObjectOp):
             obj.OpFinalDepth.Value = -10
             obj.OpStartDepth.Value = 10
 
-        Path.Log.debug("Default OpFinalDepth: {}".format(obj.OpFinalDepth.Value))
-        Path.Log.debug("Default OpStartDepth: {}".format(obj.OpStartDepth.Value))
+        logger.debug("Default OpFinalDepth: {}".format(obj.OpFinalDepth.Value))
+        logger.debug("Default OpStartDepth: {}".format(obj.OpStartDepth.Value))
 
     def opApplyPropertyLimits(self, obj):
         """opApplyPropertyLimits(obj) ... Apply necessary limits to user input property values before performing main operation."""
         # Limit sample interval
         if obj.SampleInterval.Value < 0.0001:
             obj.SampleInterval.Value = 0.0001
-            Path.Log.error(
+            logger.error(
                 translate(
                     "PathWaterline",
                     "Sample interval limits are 0.0001 to 25.4 millimeters.",
@@ -658,7 +654,7 @@ class ObjectWaterline(PathOp.ObjectOp):
             )
         if obj.SampleInterval.Value > 25.4:
             obj.SampleInterval.Value = 25.4
-            Path.Log.error(
+            logger.error(
                 translate(
                     "PathWaterline",
                     "Sample interval limits are 0.0001 to 25.4 millimeters.",
@@ -668,7 +664,7 @@ class ObjectWaterline(PathOp.ObjectOp):
         # Limit min sample interval
         if obj.MinSampleInterval.Value < 0.0001:
             obj.MinSampleInterval.Value = 0.0001
-            Path.Log.error(
+            logger.error(
                 translate(
                     "PathWaterline",
                     "Min Sample interval limits are 0.0001 to 25.4 millimeters.",
@@ -676,7 +672,7 @@ class ObjectWaterline(PathOp.ObjectOp):
             )
         if obj.MinSampleInterval.Value > 25.4:
             obj.MinSampleInterval.Value = 25.4
-            Path.Log.error(
+            logger.error(
                 translate(
                     "PathWaterline",
                     "Min Sample interval limits are 0.0001 to 25.4 millimeters.",
@@ -686,14 +682,10 @@ class ObjectWaterline(PathOp.ObjectOp):
         # Limit cut pattern angle
         if obj.CutPatternAngle < -360.0:
             obj.CutPatternAngle = 0.0
-            Path.Log.error(
-                translate("PathWaterline", "Cut pattern angle limits are +-360 degrees.")
-            )
+            logger.error(translate("PathWaterline", "Cut pattern angle limits are +-360 degrees."))
         if obj.CutPatternAngle >= 360.0:
             obj.CutPatternAngle = 0.0
-            Path.Log.error(
-                translate("PathWaterline", "Cut pattern angle limits are +- 360 degrees.")
-            )
+            logger.error(translate("PathWaterline", "Cut pattern angle limits are +- 360 degrees."))
 
         # Limit StepOver to natural number percentage
         if obj.StepOver > 100.0:
@@ -704,7 +696,7 @@ class ObjectWaterline(PathOp.ObjectOp):
         # Limit AvoidLastX_Faces to zero and positive values
         if obj.AvoidLastX_Faces < 0:
             obj.AvoidLastX_Faces = 0
-            Path.Log.error(
+            logger.error(
                 translate(
                     "PathWaterline",
                     "AvoidLastX_Faces: Only zero or positive values permitted.",
@@ -712,7 +704,7 @@ class ObjectWaterline(PathOp.ObjectOp):
             )
         if obj.AvoidLastX_Faces > 100:
             obj.AvoidLastX_Faces = 100
-            Path.Log.error(
+            logger.error(
                 translate(
                     "PathWaterline",
                     "AvoidLastX_Faces: Avoid last X faces count limited to 100.",
@@ -730,7 +722,7 @@ class ObjectWaterline(PathOp.ObjectOp):
                         fbb = base.Shape.getElement(sub).BoundBox
                         zmin = min(zmin, fbb.ZMin)
                     except Part.OCCError as e:
-                        Path.Log.error(e)
+                        logger.error(e)
             obj.OpFinalDepth = zmin
         elif self.job:
             if hasattr(obj, "BoundBox"):
@@ -746,7 +738,7 @@ class ObjectWaterline(PathOp.ObjectOp):
 
     def opExecute(self, obj):
         """opExecute(obj) ... process surface operation"""
-        Path.Log.track()
+        logger.track()
 
         self.modelSTLs = list()
         self.safeSTLs = list()
@@ -779,19 +771,19 @@ class ObjectWaterline(PathOp.ObjectOp):
         self.showDebugObjects = False  # Set to true if you want a visual DocObjects created for some path construction objects
         self.showDebugObjects = obj.ShowTempObjects
         deleteTempsFlag = True  # Set to False for debugging
-        if Path.Log.getLevel(Path.Log.thisModule()) == 4:
+        if logger.getLevel() == 4:
             deleteTempsFlag = False
         else:
             self.showDebugObjects = False
 
         # mark beginning of operation and identify parent Job
-        Path.Log.info("\nBegin Waterline operation...")
+        logger.info("\nBegin Waterline operation...")
         startTime = time.time()
 
         # Identify parent Job
         JOB = PathUtils.findParentJob(obj)
         if JOB is None:
-            Path.Log.error(translate("PathWaterline", "No JOB"))
+            logger.error(translate("PathWaterline", "No JOB"))
             return
         self.stockZMin = JOB.Stock.Shape.BoundBox.ZMin
 
@@ -811,7 +803,7 @@ class ObjectWaterline(PathOp.ObjectOp):
         oclTool = PathSurfaceSupport.OCL_Tool(ocl, obj)
         self.cutter = oclTool.getOclTool()
         if not self.cutter:
-            Path.Log.error(
+            logger.error(
                 translate(
                     "PathWaterline",
                     "Canceling Waterline operation. Error creating OCL cutter.",
@@ -884,7 +876,7 @@ class ObjectWaterline(PathOp.ObjectOp):
             if self.geoTlrnc == 0.0:
                 useDGT = True
         except AttributeError as ee:
-            Path.Log.warning(
+            logger.warning(
                 "{}\nPlease set Job.GeometryTolerance to an acceptable value. Using Path.Preferences.defaultGeometryTolerance().".format(
                     ee
                 )
@@ -938,7 +930,7 @@ class ObjectWaterline(PathOp.ObjectOp):
         pPM = PSF.preProcessModel(self.module)
         # Process selected faces, if available
         if pPM is False:
-            Path.Log.error("Unable to pre-process obj.Base.")
+            logger.error("Unable to pre-process obj.Base.")
         else:
             FACES, VOIDS = pPM
             self.modelSTLs = PSF.modelSTLs
@@ -951,7 +943,7 @@ class ObjectWaterline(PathOp.ObjectOp):
 
                 Mdl = JOB.Model.Group[m]
                 if FACES[m] is False:
-                    Path.Log.error("No data for model base: {}".format(JOB.Model.Group[m].Label))
+                    logger.error("No data for model base: {}".format(JOB.Model.Group[m].Label))
                 else:
                     if m > 0:
                         # Raise to clearance between models
@@ -962,7 +954,7 @@ class ObjectWaterline(PathOp.ObjectOp):
                                 {"Z": obj.ClearanceHeight.Value, "F": self.vertRapid},
                             )
                         )
-                        Path.Log.info("Working on Model.Group[{}]: {}".format(m, Mdl.Label))
+                        logger.info("Working on Model.Group[{}]: {}".format(m, Mdl.Label))
                     # make stock-model-voidShapes STL model for avoidance detection on transitions
                     if obj.Algorithm == "OCL Dropcutter" or obj.Algorithm == "OCL Adaptive":
                         PathSurfaceSupport._makeSafeSTL(self, JOB, obj, m, FACES[m], VOIDS[m], ocl)
@@ -1035,7 +1027,7 @@ class ObjectWaterline(PathOp.ObjectOp):
 
         execTime = time.time() - startTime
         msg = translate("PathWaterline", "operation time is")
-        Path.Log.info("Waterline " + msg + " {} sec.".format(execTime))
+        logger.info("Waterline " + msg + " {} sec.".format(execTime))
 
         return True
 
@@ -1044,7 +1036,7 @@ class ObjectWaterline(PathOp.ObjectOp):
         """_processWaterlineAreas(JOB, obj, mdlIdx, FCS, VDS)...
         This method applies any avoided faces or regions to the selected faces.
         It then calls the correct method."""
-        Path.Log.debug("_processWaterlineAreas()")
+        logger.debug("_processWaterlineAreas()")
 
         final = list()
 
@@ -1104,7 +1096,7 @@ class ObjectWaterline(PathOp.ObjectOp):
         """_getExperimentalWaterlinePaths(PNTSET, csHght, cutPattern)...
         Switching function for calling the appropriate path-geometry to OCL points conversion function
         for the various cut patterns."""
-        Path.Log.debug("_getExperimentalWaterlinePaths()")
+        logger.debug("_getExperimentalWaterlinePaths()")
         SCANS = list()
 
         # PNTSET is list, by stepover.
@@ -1292,7 +1284,7 @@ class ObjectWaterline(PathOp.ObjectOp):
                 cmds = self._loopToGcode(obj, 0.0, loop)
                 commands.extend(cmds)
 
-            Path.Log.debug("--Adaptive generation took " + str(time.time() - layTime) + " s")
+            logger.debug("--Adaptive generation took " + str(time.time() - layTime) + " s")
 
         else:
             # Setup BoundBox for Dropcutter grid
@@ -1339,7 +1331,7 @@ class ObjectWaterline(PathOp.ObjectOp):
             pntsPerLine = len(scanLines[0])
             msg = "--OCL scan: " + str(lenSL * pntsPerLine) + " points, with "
             msg += str(numScanLines) + " lines and " + str(pntsPerLine) + " pts/line"
-            Path.Log.debug(msg)
+            logger.debug(msg)
 
             lyr = 0
             cmds = []
@@ -1349,7 +1341,7 @@ class ObjectWaterline(PathOp.ObjectOp):
                 cmds = self._getWaterline(obj, scanLines, layDep, lyr, lenSL, pntsPerLine)
                 commands.extend(cmds)
                 lyr += 1
-            Path.Log.debug("--All layer scans combined took " + str(time.time() - layTime) + " s")
+            logger.debug("--All layer scans combined took " + str(time.time() - layTime) + " s")
 
         return commands
 
@@ -1382,7 +1374,7 @@ class ObjectWaterline(PathOp.ObjectOp):
         msg = translate(
             "Waterline", ": Steps below the model's top Face will be the only ones processed."
         )
-        Path.Log.info("Waterline " + msg)
+        logger.info("Waterline " + msg)
 
         # Setup OCL AdaptiveWaterline
         awl = ocl.AdaptiveWaterline()
@@ -1662,7 +1654,7 @@ class ObjectWaterline(PathOp.ObjectOp):
         while srch is True:
             srch = False
             if srchCnt > maxSrchs:
-                Path.Log.debug(
+                logger.debug(
                     "Max search scans, "
                     + str(maxSrchs)
                     + " reached\nPossible incomplete waterline result!"
@@ -1678,7 +1670,7 @@ class ObjectWaterline(PathOp.ObjectOp):
                         self.topoMap[L][P] = 0  # Mute the starting point
                         loopList.append(loop)
             srchCnt += 1
-        Path.Log.debug(
+        logger.debug(
             "Search count for layer "
             + str(lyr)
             + " is "
@@ -1701,7 +1693,7 @@ class ObjectWaterline(PathOp.ObjectOp):
         while follow is True:
             ptc += 1
             if ptc > ptLmt:
-                Path.Log.debug(
+                logger.debug(
                     "Loop number "
                     + str(loopNum)
                     + " at ["
@@ -1819,7 +1811,7 @@ class ObjectWaterline(PathOp.ObjectOp):
     def _experimentalWaterlineOp(self, JOB, obj, mdlIdx, subShp=None):
         """_waterlineOp(JOB, obj, mdlIdx, subShp=None) ...
         Main waterline function to perform waterline extraction from model."""
-        Path.Log.debug("_experimentalWaterlineOp()")
+        logger.debug("_experimentalWaterlineOp()")
 
         commands = []
         base = JOB.Model.Group[mdlIdx]
@@ -1841,7 +1833,7 @@ class ObjectWaterline(PathOp.ObjectOp):
             depthparams = [finDep]
         else:
             depthparams = [dp for dp in depthParams]
-        Path.Log.debug("Experimental Waterline depthparams:\n{}".format(depthparams))
+        logger.debug("Experimental Waterline depthparams:\n{}".format(depthparams))
 
         # Prepare PathDropCutter objects with STL data
         # safePDC = self._planarGetPDC(safeSTL, depthparams[lenDP - 1], obj.SampleInterval.Value, self.cutter)
@@ -1863,7 +1855,7 @@ class ObjectWaterline(PathOp.ObjectOp):
         # Cycle through layer depths
         CUTAREAS = self._getCutAreas(base.Shape, depthparams, bbFace, trimFace, borderFace)
         if not CUTAREAS:
-            Path.Log.error("No cross-section cut areas identified.")
+            logger.error("No cross-section cut areas identified.")
             return commands
 
         caCnt = 0
@@ -1885,7 +1877,7 @@ class ObjectWaterline(PathOp.ObjectOp):
                 self.showDebugObject(area, "CutArea_{}".format(caCnt))
             else:
                 data = FreeCAD.Units.Quantity(csHght, FreeCAD.Units.Length).UserString
-                Path.Log.debug("Cut area at {} is zero.".format(data))
+                logger.debug("Cut area at {} is zero.".format(data))
 
             # get offset wire(s) based upon cross-section cut area
             if cont:
@@ -1895,7 +1887,7 @@ class ObjectWaterline(PathOp.ObjectOp):
                 ofstArea = PathUtils.getOffsetArea(activeArea, ofst, self.wpc)
                 if not ofstArea:
                     data = FreeCAD.Units.Quantity(csHght, FreeCAD.Units.Length).UserString
-                    Path.Log.debug("No offset area returned for cut area depth at {}.".format(data))
+                    logger.debug("No offset area returned for cut area depth at {}.".format(data))
                     cont = False
 
             if cont:
@@ -1908,13 +1900,13 @@ class ObjectWaterline(PathOp.ObjectOp):
                     else:
                         cont = False
                         data = FreeCAD.Units.Quantity(csHght, FreeCAD.Units.Length).UserString
-                        Path.Log.error("Could not determine solid faces at {}.".format(data))
+                        logger.error("Could not determine solid faces at {}.".format(data))
                 else:
                     clearArea = activeArea
 
             if cont:
                 data = FreeCAD.Units.Quantity(csHght, FreeCAD.Units.Length).UserString
-                Path.Log.debug("... Clearning area at {}.".format(data))
+                logger.debug("... Clearning area at {}.".format(data))
                 # Make waterline path for current CUTAREA depth (csHght)
                 commands.extend(self._wiresToWaterlinePath(obj, clearArea, csHght))
                 clearArea.translate(FreeCAD.Vector(0.0, 0.0, 0.0 - clearArea.BoundBox.ZMin))
@@ -1935,7 +1927,7 @@ class ObjectWaterline(PathOp.ObjectOp):
         # Efor
 
         if clearLastLayer and obj.ClearLastLayer != "Off":
-            Path.Log.debug("... Clearning last layer")
+            logger.debug("... Clearning last layer")
             clrLyr, cLL = self._clearLayer(obj, 1, 1, False)
             lastClearArea.translate(FreeCAD.Vector(0.0, 0.0, 0.0 - lastClearArea.BoundBox.ZMin))
             if clrLyr == "Offset":
@@ -1953,7 +1945,7 @@ class ObjectWaterline(PathOp.ObjectOp):
         """_getCutAreas(JOB, shape, depthparams, bbFace, borderFace) ...
         Takes shape, depthparams and base-envelope-cross-section, and
         returns a list of cut areas - one for each depth."""
-        Path.Log.debug("_getCutAreas()")
+        logger.debug("_getCutAreas()")
 
         CUTAREAS = list()
         isFirst = True
@@ -1962,7 +1954,7 @@ class ObjectWaterline(PathOp.ObjectOp):
         # Cycle through layer depths
         for dp in range(0, lenDP):
             csHght = depthparams[dp]
-            # Path.Log.debug('Depth {} is {}'.format(dp + 1, csHght))
+            # logger.debug('Depth {} is {}'.format(dp + 1, csHght))
 
             # Get slice at depth of shape
             csFaces = self._getModelCrossSection(shape, csHght)  # returned at Z=0.0
@@ -1988,7 +1980,7 @@ class ObjectWaterline(PathOp.ObjectOp):
                     CUTAREAS.append(cutArea)
                     isFirst = False
                 else:
-                    Path.Log.error("No waterline at depth: {} mm.".format(csHght))
+                    logger.error("No waterline at depth: {} mm.".format(csHght))
         # Efor
 
         if len(CUTAREAS) > 0:
@@ -1997,7 +1989,7 @@ class ObjectWaterline(PathOp.ObjectOp):
         return False
 
     def _wiresToWaterlinePath(self, obj, ofstPlnrShp, csHght):
-        Path.Log.debug("_wiresToWaterlinePath()")
+        logger.debug("_wiresToWaterlinePath()")
         commands = list()
 
         # Translate path geometry to layer height
@@ -2031,7 +2023,7 @@ class ObjectWaterline(PathOp.ObjectOp):
         return commands
 
     def _makeCutPatternLayerPaths(self, JOB, obj, clrAreaShp, csHght, cutPattern):
-        Path.Log.debug("_makeCutPatternLayerPaths()")
+        logger.debug("_makeCutPatternLayerPaths()")
         commands = []
 
         clrAreaShp.translate(FreeCAD.Vector(0.0, 0.0, 0.0 - clrAreaShp.BoundBox.ZMin))
@@ -2047,7 +2039,7 @@ class ObjectWaterline(PathOp.ObjectOp):
             self.tmpCOM = PGG.getCenterOfPattern()
             pathGeom = PGG.generatePathGeometry()
             if not pathGeom:
-                Path.Log.warning("No path geometry generated.")
+                logger.warning("No path geometry generated.")
                 return commands
             pathGeom.translate(FreeCAD.Vector(0.0, 0.0, csHght - pathGeom.BoundBox.ZMin))
 
@@ -2073,7 +2065,7 @@ class ObjectWaterline(PathOp.ObjectOp):
         return commands
 
     def _makeOffsetLayerPaths(self, obj, clrAreaShp, csHght):
-        Path.Log.debug("_makeOffsetLayerPaths()")
+        logger.debug("_makeOffsetLayerPaths()")
         cmds = list()
         ofst = 0.0 - self.cutOut
         shape = clrAreaShp
@@ -2089,12 +2081,12 @@ class ObjectWaterline(PathOp.ObjectOp):
             if cnt == 0:
                 ofst = 0.0 - self.cutOut
             cnt += 1
-        Path.Log.debug(" -Offset path count: {} at height: {}".format(cnt, round(csHght, 2)))
+        logger.debug(" -Offset path count: {} at height: {}".format(cnt, round(csHght, 2)))
 
         return cmds
 
     def _clearGeomToPaths(self, JOB, obj, safePDC, stpOVRS, cutPattern):
-        Path.Log.debug("_clearGeomToPaths()")
+        logger.debug("_clearGeomToPaths()")
 
         GCODE = [Path.Command("N (Beginning of Single-pass layer.)", {})]
         tolrnc = JOB.GeometryTolerance.Value
@@ -2137,7 +2129,7 @@ class ObjectWaterline(PathOp.ObjectOp):
             # Cycle through current step-over parts
             for i in range(0, lenPRTS):
                 prt = PRTS[i]
-                # Path.Log.debug('prt: {}'.format(prt))
+                # logger.debug('prt: {}'.format(prt))
                 if prt == "BRK":
                     nxtStart = PRTS[i + 1][0]
                     # minSTH = self._getMinSafeTravelHeight(safePDC, last, nxtStart)  # Check safe travel height against fullSTL
@@ -2165,7 +2157,7 @@ class ObjectWaterline(PathOp.ObjectOp):
                     elif cutPattern in ["Circular", "CircularZigZag"]:
                         # isCircle = True if lenPRTS == 1 else False
                         isZigZag = True if cutPattern == "CircularZigZag" else False
-                        Path.Log.debug(
+                        logger.debug(
                             "so, isZigZag, odd, cMode: {}, {}, {}, {}".format(
                                 so, isZigZag, odd, prt[3]
                             )
@@ -2183,11 +2175,11 @@ class ObjectWaterline(PathOp.ObjectOp):
         return GCODE
 
     def _getSolidAreasFromPlanarFaces(self, csFaces):
-        Path.Log.debug("_getSolidAreasFromPlanarFaces()")
+        logger.debug("_getSolidAreasFromPlanarFaces()")
         holds = list()
         useFaces = list()
         lenCsF = len(csFaces)
-        Path.Log.debug("lenCsF: {}".format(lenCsF))
+        logger.debug("lenCsF: {}".format(lenCsF))
 
         if lenCsF == 1:
             useFaces = csFaces
@@ -2252,7 +2244,7 @@ class ObjectWaterline(PathOp.ObjectOp):
         return False
 
     def _getModelCrossSection(self, shape, csHght):
-        Path.Log.debug("_getModelCrossSection()")
+        logger.debug("_getModelCrossSection()")
         wires = list()
 
         def byArea(fc):
@@ -2272,7 +2264,7 @@ class ObjectWaterline(PathOp.ObjectOp):
             FCS.sort(key=byArea, reverse=True)
             return FCS
         else:
-            Path.Log.debug(" -No wires from .slice() method")
+            logger.debug(" -No wires from .slice() method")
 
         return False
 
@@ -2304,7 +2296,7 @@ class ObjectWaterline(PathOp.ObjectOp):
 
     def _wireToPath(self, obj, wire, startVect):
         """_wireToPath(obj, wire, startVect) ... wire to path."""
-        Path.Log.track()
+        logger.track()
 
         paths = []
         pathParams = {}
@@ -2381,7 +2373,7 @@ class ObjectWaterline(PathOp.ObjectOp):
         return cmds
 
     def _clearLayer(self, obj, ca, lastCA, clearLastLayer):
-        Path.Log.debug("_clearLayer()")
+        logger.debug("_clearLayer()")
         clrLyr = False
 
         if obj.ClearLastLayer == "Off":
@@ -2390,7 +2382,7 @@ class ObjectWaterline(PathOp.ObjectOp):
         else:
             obj.CutPattern = "None"
             if ca == lastCA:  # if current iteration is last layer
-                Path.Log.debug("... Clearing bottom layer.")
+                logger.debug("... Clearing bottom layer.")
                 clrLyr = obj.ClearLastLayer
                 clearLastLayer = False
 

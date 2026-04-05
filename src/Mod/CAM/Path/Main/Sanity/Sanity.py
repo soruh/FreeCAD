@@ -42,11 +42,7 @@ import Path.Dressup.Utils as PathDressup
 
 translate = FreeCAD.Qt.translate
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class CAMSanity:
@@ -272,7 +268,7 @@ class CAMSanity:
         data["operations"] = []
         for op in obj.Operations.Group:
             oplabel = op.Label
-            Path.Log.debug(oplabel)
+            logger.debug(oplabel)
             ctime = op.CycleTime if hasattr(op, "CycleTime") else "00:00:00"
             cool = op.CoolantMode if hasattr(op, "CoolantMode") else "N/A"
 
@@ -439,7 +435,7 @@ class CAMSanity:
             tooldata["imagebytes"] = imagebytes
             imagepath = os.path.join(self.filelocation, f"T{TC.ToolNumber}.png")
             tooldata["imagepath"] = imagepath
-            Path.Log.debug(imagepath)
+            logger.debug(imagepath)
             # No longer writing imagedata to disk; handled by imagebytes logic above
 
             tooldata["feedrate"] = str(TC.HorizFeed.UserString)
@@ -503,7 +499,7 @@ class CAMSanity:
         return str(obj)  # Fallback to convert any other non-serializable types to string
 
     def get_output_report(self):
-        Path.Log.debug("get_output_url")
+        logger.debug("get_output_url")
 
         generator = ReportGenerator.ReportGenerator(self.data, embed_images=True)
         return generator.generate_html()
@@ -537,7 +533,7 @@ class CAMSanity:
             try:
                 all_squawks.extend(method().get("squawkData", []))
             except Exception as e:
-                Path.Log.warning(f"get_all_squawks: {method.__name__} failed: {e}")
+                logger.warning(f"get_all_squawks: {method.__name__} failed: {e}")
         all_squawks.extend(self._validate_job_structure())
 
         # Collect postprocessor-specific squawks
@@ -558,11 +554,11 @@ class CAMSanity:
                         pp_squawks = postprocessor.get_sanity_checks(self.job)
                         all_squawks.extend(pp_squawks)
             except Exception as e:
-                Path.Log.warning(f"Failed to get postprocessor sanity checks: {e}")
+                logger.warning(f"Failed to get postprocessor sanity checks: {e}")
 
         critical = [s for s in all_squawks if s["squawkType"] in ("WARNING", "CAUTION")]
-        Path.Log.debug(f"get_all_squawks: {len(all_squawks)} squawks, {len(critical)} critical")
-        Path.Log.debug(f"Critical squawks: {critical}")
+        logger.debug(f"get_all_squawks: {len(all_squawks)} squawks, {len(critical)} critical")
+        logger.debug(f"Critical squawks: {critical}")
         return all_squawks, critical
 
     @staticmethod

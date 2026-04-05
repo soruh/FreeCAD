@@ -40,11 +40,7 @@ import webbrowser
 
 translate = FreeCAD.Qt.translate
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class CommandCAMSanity:
@@ -88,7 +84,7 @@ class CommandCAMSanity:
         html = sanity_checker.get_output_report()
 
         if html is None:
-            Path.Log.error("Sanity check failed. No report generated.")
+            logger.error("Sanity check failed. No report generated.")
             return
 
         with open(file_location, "w") as fp:
@@ -126,7 +122,7 @@ class CommandCAMQuickValidate:
         try:
             all_squawks, critical_squawks = Sanity.CAMSanity.validate_job(obj)
         except Exception as e:
-            Path.Log.error(f"CAM_QuickValidate: Validation failed: {e}")
+            logger.error(f"CAM_QuickValidate: Validation failed: {e}")
             FreeCAD.Console.PrintError(f"Quick Validate failed: {e}\n")
             return
 

@@ -33,11 +33,7 @@ __author__ = "sliptonic (Brad Collette)"
 __url__ = "https://www.freecad.org"
 __doc__ = "CAM Probing operation."
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class ObjectProbing(PathOp.ObjectOp):
@@ -90,9 +86,9 @@ class ObjectProbing(PathOp.ObjectOp):
 
     def opExecute(self, obj):
         """opExecute(obj) ... generate probe locations."""
-        Path.Log.track()
+        logger.track()
         if not self.isToolSupported(obj, self.tool):
-            Path.Log.warning("No suitable probe tool found")
+            logger.warning("No suitable probe tool found")
             return
 
         self.commandlist.append(Path.Command("(Begin Probing)"))
@@ -135,7 +131,7 @@ class ObjectProbing(PathOp.ObjectOp):
     def isToolSupported(self, obj, tool):
         """Probe operation requires a probe tool"""
         support = PathUtils.getToolShapeName(tool) == "probe"
-        Path.Log.track(tool.Label, support)
+        logger.track(tool.Label, support)
         return support
 
 

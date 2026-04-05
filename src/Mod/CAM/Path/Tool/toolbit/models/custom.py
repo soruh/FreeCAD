@@ -33,7 +33,7 @@ class ToolBitCustom(ToolBit):
     def __init__(
         self, shape: ToolBitShapeCustom, id: str | None = None, attrs: Optional[Mapping] = None
     ):
-        Path.Log.track(f"ToolBitCustom __init__ called with shape: {shape}, id: {id}")
+        logger.track(f"ToolBitCustom __init__ called with shape: {shape}, id: {id}")
         super().__init__(shape, id=id, attrs=attrs)
 
     @property

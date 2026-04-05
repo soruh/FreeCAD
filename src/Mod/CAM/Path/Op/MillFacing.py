@@ -53,11 +53,7 @@ if FreeCAD.GuiUp:
 translate = FreeCAD.Qt.translate
 
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class ObjectMillFacing(PathOp.ObjectOp):
@@ -82,7 +78,7 @@ class ObjectMillFacing(PathOp.ObjectOp):
 
     def initOpProperties(self, obj, warn=False):
         """initOpProperties(obj) ... create operation specific properties"""
-        Path.Log.track()
+        logger.track()
         self.addNewProps = list()
 
         for prtyp, nm, grp, tt in self.opPropertyDefinitions():
@@ -204,7 +200,7 @@ class ObjectMillFacing(PathOp.ObjectOp):
         'raw' is list of (translated_text, data_string) tuples
         'translated' is list of translated string literals
         """
-        Path.Log.track()
+        logger.track()
 
         enums = {
             "CutMode": [
@@ -225,11 +221,11 @@ class ObjectMillFacing(PathOp.ObjectOp):
         data = list()
         idx = 0 if dataType == "translated" else 1
 
-        Path.Log.debug(enums)
+        logger.debug(enums)
 
         for k, v in enumerate(enums):
             data.append((v, [tup[idx] for tup in enums[v]]))
-        Path.Log.debug(data)
+        logger.debug(data)
 
         return data
 
@@ -248,7 +244,7 @@ class ObjectMillFacing(PathOp.ObjectOp):
 
     def opSetDefaultValues(self, obj, job):
         """opSetDefaultValues(obj, job) ... set default values for operation-specific properties"""
-        Path.Log.track()
+        logger.track()
 
         # Set default values directly like other operations do
         obj.CutMode = "Climb"
@@ -263,18 +259,18 @@ class ObjectMillFacing(PathOp.ObjectOp):
 
     def opExecute(self, obj):
         """opExecute(obj) ... process Mill Facing operation"""
-        Path.Log.track()
-        Path.Log.debug("MillFacing.opExecute() starting")
+        logger.track()
+        logger.debug("MillFacing.opExecute() starting")
 
         # Get tool information
         tool = obj.ToolController.Tool
-        Path.Log.debug(f"Tool: {tool.Label if tool else 'None'}")
+        logger.debug(f"Tool: {tool.Label if tool else 'None'}")
         tool_diameter = tool.Diameter.Value
-        Path.Log.debug(f"Tool diameter: {tool_diameter}")
+        logger.debug(f"Tool diameter: {tool_diameter}")
 
         # Determine the step-downs
         finish_step = 0.0  # No finish step for facing
-        Path.Log.debug(
+        logger.debug(
             f"Depth parameters: clearance={obj.ClearanceHeight.Value}, safe={obj.SafeHeight.Value}, start={obj.StartDepth.Value}, step={obj.StepDown.Value}, final={obj.FinalDepth.Value + obj.AxialStockToLeave.Value}"
         )
         depthparams = PathUtils.depth_params(
@@ -286,15 +282,15 @@ class ObjectMillFacing(PathOp.ObjectOp):
             final_depth=obj.FinalDepth.Value + obj.AxialStockToLeave.Value,
             user_depths=None,
         )
-        Path.Log.debug(f"Depth params object: {depthparams}")
+        logger.debug(f"Depth params object: {depthparams}")
 
         # Always use the stock object top face for facing operations
         job = PathUtils.findParentJob(obj)
-        Path.Log.debug(f"Job: {job.Label if job else 'None'}")
+        logger.debug(f"Job: {job.Label if job else 'None'}")
         if job and job.Stock:
-            Path.Log.debug(f"Stock: {job.Stock.Label}")
+            logger.debug(f"Stock: {job.Stock.Label}")
             stock_faces = job.Stock.Shape.Faces
-            Path.Log.debug(f"Number of stock faces: {len(stock_faces)}")
+            logger.debug(f"Number of stock faces: {len(stock_faces)}")
 
             # Find faces with normal pointing toward Z+ (upward)
             z_up_faces = []
@@ -303,24 +299,24 @@ class ObjectMillFacing(PathOp.ObjectOp):
                 u_mid = (face.ParameterRange[0] + face.ParameterRange[1]) / 2
                 v_mid = (face.ParameterRange[2] + face.ParameterRange[3]) / 2
                 normal = face.normalAt(u_mid, v_mid)
-                Path.Log.debug(f"Face normal: {normal}, Z component: {normal.z}")
+                logger.debug(f"Face normal: {normal}, Z component: {normal.z}")
 
                 # Check if normal points upward (Z+ direction) with some tolerance
                 if normal.z > 0.9:  # Allow for slight deviation from perfect vertical
                     z_up_faces.append(face)
-                    Path.Log.debug(f"Found upward-facing face at Z={face.BoundBox.ZMax}")
+                    logger.debug(f"Found upward-facing face at Z={face.BoundBox.ZMax}")
 
             if not z_up_faces:
-                Path.Log.error("No upward-facing faces found in stock")
+                logger.error("No upward-facing faces found in stock")
                 raise ValueError("No upward-facing faces found in stock")
 
             # From the upward-facing faces, select the highest one
             top_face = max(z_up_faces, key=lambda f: f.BoundBox.ZMax)
-            Path.Log.debug(f"Selected top face ZMax: {top_face.BoundBox.ZMax}")
+            logger.debug(f"Selected top face ZMax: {top_face.BoundBox.ZMax}")
             boundary_wire = top_face.OuterWire
-            Path.Log.debug(f"Wire vertices: {len(boundary_wire.Vertexes)}")
+            logger.debug(f"Wire vertices: {len(boundary_wire.Vertexes)}")
         else:
-            Path.Log.error("No stock found for facing operation")
+            logger.error("No stock found for facing operation")
             raise ValueError("No stock found for facing operation")
 
         boundary_wire = boundary_wire.makeOffset2D(
@@ -347,7 +343,7 @@ class ObjectMillFacing(PathOp.ObjectOp):
         try:
             if obj.ClearingPattern == "Spiral":
                 # Spiral has different signature - no pass_extension or retract_height
-                Path.Log.debug("Generating spiral toolpath")
+                logger.debug("Generating spiral toolpath")
                 base_commands = spiral_facing.spiral(
                     polygon=boundary_wire,
                     tool_diameter=tool_diameter,
@@ -357,7 +353,7 @@ class ObjectMillFacing(PathOp.ObjectOp):
                     angle_degrees=getattr(obj.Angle, "Value", obj.Angle),
                 )
             elif obj.ClearingPattern == "ZigZag":
-                Path.Log.debug("Generating zigzag toolpath")
+                logger.debug("Generating zigzag toolpath")
                 base_commands = zigzag_facing.zigzag(
                     polygon=boundary_wire,
                     tool_diameter=tool_diameter,
@@ -369,7 +365,7 @@ class ObjectMillFacing(PathOp.ObjectOp):
                     angle_degrees=getattr(obj.Angle, "Value", obj.Angle),
                 )
             elif obj.ClearingPattern == "Bidirectional":
-                Path.Log.debug("Generating bidirectional toolpath")
+                logger.debug("Generating bidirectional toolpath")
                 base_commands = bidirectional_facing.bidirectional(
                     polygon=boundary_wire,
                     tool_diameter=tool_diameter,
@@ -380,7 +376,7 @@ class ObjectMillFacing(PathOp.ObjectOp):
                     angle_degrees=getattr(obj.Angle, "Value", obj.Angle),
                 )
             elif obj.ClearingPattern == "Directional":
-                Path.Log.debug("Generating directional toolpath")
+                logger.debug("Generating directional toolpath")
                 base_commands = directional_facing.directional(
                     polygon=boundary_wire,
                     tool_diameter=tool_diameter,
@@ -392,14 +388,14 @@ class ObjectMillFacing(PathOp.ObjectOp):
                     angle_degrees=getattr(obj.Angle, "Value", obj.Angle),
                 )
             else:
-                Path.Log.error(f"Unknown clearing pattern: {obj.ClearingPattern}")
+                logger.error(f"Unknown clearing pattern: {obj.ClearingPattern}")
                 raise ValueError(f"Unknown clearing pattern: {obj.ClearingPattern}")
 
-            Path.Log.debug(f"Generated {len(base_commands)} base commands")
-            Path.Log.debug(base_commands)
+            logger.debug(f"Generated {len(base_commands)} base commands")
+            logger.debug(base_commands)
 
         except Exception as e:
-            Path.Log.error(f"Error generating toolpath: {e}")
+            logger.error(f"Error generating toolpath: {e}")
             raise
 
         # clear commandlist
@@ -415,7 +411,7 @@ class ObjectMillFacing(PathOp.ObjectOp):
             while True:
                 depth = depthparams.next()
                 depth_count += 1
-                Path.Log.debug(f"Processing depth {depth_count}: {depth}")
+                logger.debug(f"Processing depth {depth_count}: {depth}")
 
                 if depth_count == 1:
                     # First stepdown preamble:
@@ -520,7 +516,7 @@ class ObjectMillFacing(PathOp.ObjectOp):
                                     if not z_changed:
                                         continue
                             self.commandlist.append(Path.Command(cmd.Name, new_params))
-                    Path.Log.debug(
+                    logger.debug(
                         f"First stepdown: Added {len(base_commands)} commands for depth {depth}"
                     )
                 else:
@@ -643,12 +639,12 @@ class ObjectMillFacing(PathOp.ObjectOp):
                             ):
                                 continue
                         self.commandlist.append(Path.Command(cc.Name, cp))
-                    Path.Log.debug(
+                    logger.debug(
                         f"Stepdown {depth_count}: Added linking + {len(copy_commands)} commands for depth {depth}"
                     )
 
         except StopIteration:
-            Path.Log.debug(f"All depths processed. Total depth levels: {depth_count}")
+            logger.debug(f"All depths processed. Total depth levels: {depth_count}")
 
         # Add final G0 to clearance height
         targetZ = obj.ClearanceHeight.Value
@@ -666,15 +662,15 @@ class ObjectMillFacing(PathOp.ObjectOp):
             # Dump last 12 commands for diagnostics
             n = len(self.commandlist)
             start = max(0, n - 12)
-            Path.Log.error("FeedRate failure. Dumping last commands:")
+            logger.error("FeedRate failure. Dumping last commands:")
             for i in range(start, n):
                 c = self.commandlist[i]
-                Path.Log.error(f"  #{i}: {c.Name} {c.Parameters}")
+                logger.error(f"  #{i}: {c.Name} {c.Parameters}")
             raise
 
-        Path.Log.debug(f"Total commands in commandlist: {len(self.commandlist)}")
-        Path.Log.debug("MillFacing.opExecute() completed successfully")
-        Path.Log.debug(self.commandlist)
+        logger.debug(f"Total commands in commandlist: {len(self.commandlist)}")
+        logger.debug("MillFacing.opExecute() completed successfully")
+        logger.debug(self.commandlist)
 
 
 # Eclass

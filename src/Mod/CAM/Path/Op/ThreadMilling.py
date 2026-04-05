@@ -60,11 +60,7 @@ __doc__ = "CAM thread milling operation."
 # math.sqrt(3)/2 ... 60deg triangle height (kept for reference / back-compat)
 SQRT_3_DIVIDED_BY_2 = 0.8660254037844386
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 translate = FreeCAD.Qt.translate
 
@@ -128,7 +124,7 @@ def _isThreadInternal(obj):
 
 
 def threadSetupInternal(obj, zTop, zBottom):
-    Path.Log.track()
+    logger.track()
     if obj.ThreadOrientation == RightHand:
         # Right hand thread, G2, top down -> conventional milling
         if obj.Direction == DirectionConventional:
@@ -144,7 +140,7 @@ def threadSetupInternal(obj, zTop, zBottom):
 
 
 def threadSetupExternal(obj, zTop, zBottom):
-    Path.Log.track()
+    logger.track()
     if obj.ThreadOrientation == RightHand:
         # right hand thread, G2, top down -> climb milling
         if obj.Direction == DirectionClimb:
@@ -160,7 +156,7 @@ def threadSetupExternal(obj, zTop, zBottom):
 
 def threadSetup(obj):
     """Return (cmd, zbegin, zend) of thread milling operation"""
-    Path.Log.track()
+    logger.track()
 
     zTop = obj.StartDepth.Value
     zBottom = obj.FinalDepth.Value
@@ -173,7 +169,7 @@ def threadSetup(obj):
 
 def threadRadii(internal, majorDia, minorDia, toolDia, toolCrest, cuttingAngle=60.0):
     """threadRadii(majorDia, minorDia, toolDia, toolCrest, cuttingAngle) ... returns the minimum and maximum radius for thread."""
-    Path.Log.track(internal, majorDia, minorDia, toolDia, toolCrest, cuttingAngle)
+    logger.track(internal, majorDia, minorDia, toolDia, toolCrest, cuttingAngle)
     if toolCrest is None:
         toolCrest = 0.0
     # As it turns out metric and imperial standard threads follow the same rules.
@@ -200,12 +196,12 @@ def threadRadii(internal, majorDia, minorDia, toolDia, toolCrest, cuttingAngle=6
         # Compensate for the crest of the tool
         toolTip = innerTip + toolCrest * crestFactor
         radii = ((majorDia + toolDia) / 2.0, toolTip + toolDia / 2.0)
-    Path.Log.track(radii)
+    logger.track(radii)
     return radii
 
 
 def threadPasses(count, radii, internal, majorDia, minorDia, toolDia, toolCrest, cuttingAngle=60.0):
-    Path.Log.track(count, radii, internal, majorDia, minorDia, toolDia, toolCrest, cuttingAngle)
+    logger.track(count, radii, internal, majorDia, minorDia, toolDia, toolCrest, cuttingAngle)
     # the logic goes as follows, total area to be removed:
     #   A = H * W  ... where H is the depth and W is half the width of a thread
     #     H = k * sin(30) = k * 1/2  -> k = 2 * H
@@ -227,19 +223,19 @@ def threadPasses(count, radii, internal, majorDia, minorDia, toolDia, toolCrest,
     # the order in which they have to get milled. As a result H ends up being negative
     # and the math for internal and external threads is identical.
     passes = [minor + h for h in Hi]
-    Path.Log.debug(f"threadPasses({minor}, {major}) -> H={H} : {Hi}  --> {passes}")
+    logger.debug(f"threadPasses({minor}, {major}) -> H={H} : {Hi}  --> {passes}")
 
     return passes
 
 
 def elevatorRadius(obj, center, internal, tool):
     """elevatorLocation(obj, center, internal, tool) ... return suitable location for the tool elevator"""
-    Path.Log.track(center, internal, tool.Diameter)
+    logger.track(center, internal, tool.Diameter)
     if internal:
         dy = float(obj.MinorDiameter - tool.Diameter) / 2 - 1
         if dy < 0:
             if obj.MinorDiameter < tool.Diameter:
-                Path.Log.error(
+                logger.error(
                     "The selected tool is too big (d={}) for milling a thread with minor diameter D={}".format(
                         tool.Diameter, obj.MinorDiameter
                     )
@@ -264,7 +260,7 @@ class ObjectThreadMilling(PathCircularHoleBase.ObjectOp):
         'raw' is list of (translated_text, data_string) tuples
         'translated' is list of translated string literals
         """
-        Path.Log.track()
+        logger.track()
 
         # Enumeration lists for App::PropertyEnumeration properties
         enums = {
@@ -334,20 +330,20 @@ class ObjectThreadMilling(PathCircularHoleBase.ObjectOp):
         data = list()
         idx = 0 if dataType == "translated" else 1
 
-        Path.Log.debug(enums)
+        logger.debug(enums)
 
         for k, v in enumerate(enums):
             data.append((v, [tup[idx] for tup in enums[v]]))
-        Path.Log.debug(data)
+        logger.debug(data)
 
         return data
 
     def circularHoleFeatures(self, obj):
-        Path.Log.track()
+        logger.track()
         return PathOp.FeatureBaseGeometry
 
     def initCircularHoleOperation(self, obj):
-        Path.Log.track()
+        logger.track()
         obj.addProperty(
             "App::PropertyEnumeration",
             "ThreadOrientation",
@@ -436,7 +432,7 @@ class ObjectThreadMilling(PathCircularHoleBase.ObjectOp):
             setattr(obj, n[0], n[1])
 
     def threadPassRadii(self, obj):
-        Path.Log.track(obj.Label)
+        logger.track(obj.Label)
         rMajor = (obj.MajorDiameter.Value - self.tool.Diameter) / 2.0
         rMinor = (obj.MinorDiameter.Value - self.tool.Diameter) / 2.0
         if obj.Passes < 1:
@@ -448,7 +444,7 @@ class ObjectThreadMilling(PathCircularHoleBase.ObjectOp):
         return list(reversed(passes))
 
     def executeThreadMill(self, obj, loc, gcode, zStart, zFinal, pitch):
-        Path.Log.track(obj.Label, loc, gcode, zStart, zFinal, pitch)
+        logger.track(obj.Label, loc, gcode, zStart, zFinal, pitch)
         elevator = elevatorRadius(obj, loc, _isThreadInternal(obj), self.tool)
 
         move2clearance = Path.Command("G0", {"Z": obj.ClearanceHeight.Value, "F": self.vertRapid})
@@ -501,7 +497,7 @@ class ObjectThreadMilling(PathCircularHoleBase.ObjectOp):
         )
 
     def circularHoleExecute(self, obj, holes):
-        Path.Log.track()
+        logger.track()
         if self.isToolSupported(obj, self.tool):
             self.commandlist.append(Path.Command("(Begin Thread Milling)"))
 
@@ -510,7 +506,7 @@ class ObjectThreadMilling(PathCircularHoleBase.ObjectOp):
             if obj.TPI > 0:
                 pitch = 25.4 / obj.TPI
             if pitch <= 0:
-                Path.Log.error("Cannot create thread with pitch {}".format(pitch))
+                logger.error("Cannot create thread with pitch {}".format(pitch))
                 return
 
             # rapid to clearance height
@@ -524,10 +520,10 @@ class ObjectThreadMilling(PathCircularHoleBase.ObjectOp):
                     pitch,
                 )
         else:
-            Path.Log.error("No suitable Tool found for thread milling operation")
+            logger.error("No suitable Tool found for thread milling operation")
 
     def opSetDefaultValues(self, obj, job):
-        Path.Log.track()
+        logger.track()
         obj.ThreadOrientation = RightHand
         obj.ThreadType = ThreadTypeMetricInternal6H
         obj.ThreadFit = 50
@@ -540,7 +536,7 @@ class ObjectThreadMilling(PathCircularHoleBase.ObjectOp):
     def isToolSupported(self, obj, tool):
         """Thread milling only supports thread milling cutters."""
         support = hasattr(tool, "Diameter") and hasattr(tool, "Crest")
-        Path.Log.track(tool.Label, support)
+        logger.track(tool.Label, support)
         return support
 
 

@@ -35,11 +35,7 @@ import os
 translate = FreeCAD.Qt.translate
 
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class _ItemDelegate(QtGui.QStyledItemDelegate):
@@ -424,7 +420,7 @@ class JobCreate:
                 while name in template:
                     i = i + 1
                     name = basename + " (%s)" % i
-            Path.Log.track(name, tFile)
+            logger.track(name, tFile)
             template[name] = tFile
         selectTemplate = Path.Preferences.defaultJobTemplate()
         index = 0
@@ -439,7 +435,7 @@ class JobCreate:
     def templateFilesIn(self, path):
         """templateFilesIn(path) ... answer all file in the given directory which fit the job template naming convention.
         PathJob template files are name job_*.json"""
-        Path.Log.track(path)
+        logger.track(path)
         return glob.glob(path + "/job_*.json")
 
     def getModels(self):
@@ -535,7 +531,7 @@ class JobTemplateExport:
 
             else:  # Existing Solid
                 seHint = "-"
-                Path.Log.error(translate("CAM_Job", "Unsupported stock type"))
+                logger.error(translate("CAM_Job", "Unsupported stock type"))
             self.dialog.stockExtentHint.setText(seHint)
             spHint = "%s" % job.Stock.Placement
             self.dialog.stockPlacementHint.setText(spHint)

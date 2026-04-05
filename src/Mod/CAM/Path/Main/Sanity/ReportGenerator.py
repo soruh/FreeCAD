@@ -40,11 +40,7 @@ from Path.Main.Sanity.HTMLTemplate import (
 
 translate = FreeCAD.Qt.translate
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class ReportGenerator:
@@ -131,7 +127,7 @@ class ReportGenerator:
             "stockData",
         ]:
             for key, val in data[block].items():
-                Path.Log.debug(f"key: {key} val: {val}")
+                logger.debug(f"key: {key} val: {val}")
                 if key == "squawkData":
                     self._format_squawks(val)
                 elif key == "bases":
@@ -139,9 +135,9 @@ class ReportGenerator:
                 elif key == "operations":
                     self._format_run_summary_ops(val)
                 elif key in ["baseimage", "imagepath", "datumImage", "stockImage"]:
-                    Path.Log.debug(f"key: {key} val: {val}")
+                    logger.debug(f"key: {key} val: {val}")
                     if self.embed_images:
-                        Path.Log.debug("Embedding images")
+                        logger.debug("Embedding images")
                         if isinstance(val, bytes):
                             encoded_image, tag = self.bytes_to_base64_with_tag(
                                 val, mime_type="image/png", alt=key
@@ -149,7 +145,7 @@ class ReportGenerator:
                         else:
                             encoded_image, tag = self.file_to_base64_with_tag(val)
                     else:
-                        Path.Log.debug("Not Embedding images")
+                        logger.debug("Not Embedding images")
                         tag = f"<img src={val} name='Image' alt={key} />"
                     self.formatted_data[key] = tag
                 else:
@@ -188,7 +184,7 @@ class ReportGenerator:
         self.formatted_data["tool_data"] = self.tools
         self.formatted_data["tool_list"] = self._format_tool_list(data["toolData"])
 
-        # Path.Log.debug(self.formatted_data)
+        # logger.debug(self.formatted_data)
 
     def _format_tool_list(self, tool_data):
         tool_list = ""
@@ -221,7 +217,7 @@ class ReportGenerator:
                 td[key] = val
 
         td.update(self.translated_labels)
-        Path.Log.debug(f"Tool data: {td}")
+        logger.debug(f"Tool data: {td}")
 
         self.tools += tool_template.substitute(td)
 
@@ -266,7 +262,7 @@ class ReportGenerator:
         )  # Default to binary data type if unknown
 
         if not os.path.exists(file_path):
-            Path.Log.error(f"File not found: {file_path}")
+            logger.error(f"File not found: {file_path}")
             return "", ""
 
         try:
@@ -284,5 +280,5 @@ class ReportGenerator:
 
             return encoded_string, html_tag
         except FileNotFoundError:
-            Path.Log.error(f"File not found: {file_path}")
+            logger.error(f"File not found: {file_path}")
             return "", ""

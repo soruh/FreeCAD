@@ -34,6 +34,8 @@ from .models.icon import (
 _INTERNAL_ALIASES_FILE = os.path.join(getBuiltinAssetPath(), "Shape", "shape_aliases.json")
 _USER_ALIASES_FILE = os.path.join(getAssetPath(), "Tools", "Shape", "shape_aliases.json")
 
+logger = Path.Log.getModuleLogger()
+
 
 def _load_shape_aliases():
     """Load shape aliases from JSON files (internal default merged with user overrides, avoiding duplicates)."""
@@ -44,13 +46,13 @@ def _load_shape_aliases():
         if os.path.isfile(_INTERNAL_ALIASES_FILE):
             with open(_INTERNAL_ALIASES_FILE, "r") as f:
                 aliases = json.load(f)
-            Path.Log.debug(f"Loaded default shape aliases from {_INTERNAL_ALIASES_FILE}")
+            logger.debug(f"Loaded default shape aliases from {_INTERNAL_ALIASES_FILE}")
         else:
-            Path.Log.warning(
+            logger.warning(
                 f"Internal shape aliases file not found: {_INTERNAL_ALIASES_FILE}"
             )  # Should not happen in installed system
     except Exception as e:
-        Path.Log.error(f"Failed to load internal shape aliases: {e}")
+        logger.error(f"Failed to load internal shape aliases: {e}")
 
     # Merge user file if it exists
     try:
@@ -86,9 +88,9 @@ def _load_shape_aliases():
                             existing_subtypes.add(subtype)
                     aliases[shape_name]["subtypes"] = sorted(existing_subtypes)
 
-            Path.Log.info(f"Merged user shape aliases from {_USER_ALIASES_FILE}")
+            logger.info(f"Merged user shape aliases from {_USER_ALIASES_FILE}")
     except Exception as e:
-        Path.Log.error(f"Failed to load/merge user shape aliases: {e}")
+        logger.error(f"Failed to load/merge user shape aliases: {e}")
 
     return aliases
 
@@ -102,22 +104,22 @@ def _apply_aliases_to_shape_classes():
 
     for shape_name, data in config.items():
         if shape_name not in shape_classes:
-            Path.Log.warning(f"Unknown shape class '{shape_name}' in aliases file")
+            logger.warning(f"Unknown shape class '{shape_name}' in aliases file")
             continue
 
         shape_class = shape_classes[shape_name]
 
         # Expect dict format with aliases/subtypes
         if not isinstance(data, dict):
-            Path.Log.warning(f"Invalid data format for {shape_name} - expected dict")
+            logger.warning(f"Invalid data format for {shape_name} - expected dict")
             continue
 
         aliases_list = data.get("aliases", [])
         subtypes_list = data.get("subtypes", [])
         shape_class.aliases = tuple(sorted(alias.lower() for alias in aliases_list))
         shape_class.subtypes = tuple(sorted(subtype.lower() for subtype in subtypes_list))
-        Path.Log.info(f"Applied aliases to {shape_name}: {aliases_list}")
-        Path.Log.info(f"Applied subtypes to {shape_name}: {subtypes_list}")
+        logger.info(f"Applied aliases to {shape_name}: {aliases_list}")
+        logger.info(f"Applied subtypes to {shape_name}: {subtypes_list}")
 
 
 # Load and apply aliases immediately after imports

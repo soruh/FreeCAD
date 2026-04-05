@@ -33,8 +33,7 @@ import CAMTests.PathTestUtils as PathTestUtils
 
 FIXTURE_PATH = pathlib.Path(__file__).parent / "Fixtures"
 
-Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
-# Path.Log.trackModule(Path.Log.thisModule())
+logger = Path.Log.getModuleLogger(withLevel=Path.Log.Level.INFO, enableTracking=None)
 
 
 class TestPathHelix(PathTestUtils.PathTestBase):
@@ -90,7 +89,7 @@ class TestPathHelix(PathTestUtils.PathTestBase):
                 model = base[0]
                 for sub in base[1]:
                     pos = proxy.holePosition(model, sub)
-                    # Path.Log.track(deg, pos, pos.Length)
+                    # logger.track(deg, pos, pos.Length)
                     self.assertRoughly(round(pos.Length / 10, 0), proxy.holeDiameter(model, sub))
 
     def test03(self):
@@ -113,7 +112,7 @@ class TestPathHelix(PathTestUtils.PathTestBase):
                 model = base[0]
                 for sub in base[1]:
                     pos = proxy.holePosition(model, sub)
-                    # Path.Log.track(deg, pos, pos.Length)
+                    # logger.track(deg, pos, pos.Length)
                     self.assertRoughly(round(pos.Length / 10, 0), proxy.holeDiameter(model, sub))
 
     def test04(self):
@@ -136,7 +135,7 @@ class TestPathHelix(PathTestUtils.PathTestBase):
                 model = base[0]
                 for sub in base[1]:
                     pos = proxy.holePosition(model, sub)
-                    # Path.Log.track(deg, pos, pos.Length)
+                    # logger.track(deg, pos, pos.Length)
                     self.assertRoughly(round(pos.Length / 10, 0), proxy.holeDiameter(model, sub))
 
     def testPathDirection(self):

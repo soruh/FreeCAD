@@ -42,11 +42,7 @@ TechDraw = LazyLoader("TechDraw", globals(), "TechDraw")
 translate = FreeCAD.Qt.translate
 
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 UserInput = None
@@ -98,7 +94,7 @@ def loopdetect(obj, edge1, edge2):
     If a unique loop is not found, returns None
     """
 
-    Path.Log.track()
+    logger.track()
     candidates = []
     for wire in obj.Shape.Wires:
         for e in wire.Edges:
@@ -225,7 +221,7 @@ def horizontalFaceLoop(obj, face, faceList=None):
 
     if not all(isVertical(obj.Shape.getElement(f)) for f in faceList):
         # stop if selected faces is not vertical
-        Path.Log.warning(
+        logger.warning(
             translate(
                 "CAM",
                 "Selected faces should be vertical",
@@ -289,7 +285,7 @@ def horizontalFaceLoop(obj, face, faceList=None):
 
 def filterArcs(arcEdge):
     """filterArcs(Edge) -used to split an arc that is over 180 degrees. Returns list"""
-    Path.Log.track()
+    logger.track()
     splitlist = []
     if isinstance(arcEdge.Curve, Part.Circle):
         angle = abs(arcEdge.LastParameter - arcEdge.FirstParameter)  # Angle in radians
@@ -327,7 +323,7 @@ def makeWorkplane(shape):
     """
     Creates a workplane circle at the ZMin level.
     """
-    Path.Log.track()
+    logger.track()
     loc = Vector(shape.BoundBox.Center.x, shape.BoundBox.Center.y, shape.BoundBox.ZMin)
     c = Part.makeCircle(10, loc)
     return c
@@ -342,20 +338,20 @@ def getEnvelope(partshape, subshape=None, depthparams=None):
     partshape = solid object
     stockheight = float - Absolute Z height of the top of material before cutting.
     """
-    Path.Log.track(partshape, subshape, depthparams)
+    logger.track(partshape, subshape, depthparams)
 
     zShift = 0
     if subshape is not None:
         if isinstance(subshape, Part.Face):
-            Path.Log.debug("processing a face")
+            logger.debug("processing a face")
             sec = Part.makeCompound([subshape])
         else:
             area = Path.Area(Fill=2, Coplanar=0).add(subshape)
             area.setPlane(makeWorkplane(partshape))
-            Path.Log.debug("About to section with params: {}".format(area.getParams()))
+            logger.debug("About to section with params: {}".format(area.getParams()))
             sec = area.makeSections(heights=[0.0], project=True)[0].getShape()
 
-        Path.Log.debug(
+        logger.debug(
             "partshapeZmin: {}, subshapeZMin: {}, zShift: {}".format(
                 partshape.BoundBox.ZMin, subshape.BoundBox.ZMin, zShift
             )
@@ -371,7 +367,7 @@ def getEnvelope(partshape, subshape=None, depthparams=None):
     if depthparams is not None:
         eLength = depthparams.safe_height - depthparams.final_depth
         zShift = depthparams.final_depth - sec.BoundBox.ZMin
-        Path.Log.debug(
+        logger.debug(
             "boundbox zMIN: {} elength: {} zShift {}".format(
                 partshape.BoundBox.ZMin, eLength, zShift
             )
@@ -390,7 +386,7 @@ def getEnvelope(partshape, subshape=None, depthparams=None):
         # Extrude the section to top of Boundbox or desired height
         envelopeshape = sec.extrude(Vector(0, 0, eLength))
 
-    if Path.Log.getLevel(Path.Log.thisModule()) == Path.Log.Level.DEBUG:
+    if logger.getLevel() == Path.Log.Level.DEBUG:
         removalshape = FreeCAD.ActiveDocument.addObject("Part::Feature", "Envelope")
         removalshape.Shape = envelopeshape
     return envelopeshape
@@ -410,7 +406,7 @@ def getOffsetArea(
     Inspired by _buildPathArea() from Path.Op.Area.py module. Adjustments made
     based on notes by @sliptonic at this webpage:
     https://github.com/sliptonic/FreeCAD/wiki/PathArea-notes."""
-    Path.Log.debug("getOffsetArea()")
+    logger.debug("getOffsetArea()")
 
     areaParams = {}
     areaParams["Offset"] = offset
@@ -465,7 +461,7 @@ def getToolControllers(obj, proxy=None):
     except Exception:
         job = None
 
-    Path.Log.debug("op={} ({})".format(obj.Label, type(obj)))
+    logger.debug("op={} ({})".format(obj.Label, type(obj)))
     if job:
         return [tc for tc in job.Tools.Group if proxy.isToolSupported(obj, tc.Tool)]
     return []
@@ -484,7 +480,7 @@ def findToolController(obj, proxy, name=None):
     If no name is specified, returns the first controller.
     if no controller is found, returns None"""
 
-    Path.Log.track("name: {}".format(name))
+    logger.track("name: {}".format(name))
     c = None
     if UserInput:
         c = UserInput.selectedToolController()
@@ -511,7 +507,7 @@ def findToolController(obj, proxy, name=None):
 
 def findParentJob(obj):
     """retrieves a parent job object for an operation or other Path object"""
-    Path.Log.track()
+    logger.track()
     if hasattr(obj, "Proxy") and isinstance(obj.Proxy, PathJob.ObjectJob):
         return obj
 
@@ -540,7 +536,7 @@ def addToJob(obj, jobname=None):
     """adds a path object to a job
     obj = obj
     jobname = None"""
-    Path.Log.track(jobname)
+    logger.track(jobname)
 
     job = None
     if jobname is not None:
@@ -548,7 +544,7 @@ def addToJob(obj, jobname=None):
         if len(jobs) == 1:
             job = jobs[0]
         else:
-            Path.Log.error(translate("Path", "Didn't find job {}".format(jobname)))
+            logger.error(translate("Path", "Didn't find job {}".format(jobname)))
             return None
     else:
         jobs = GetJobs()
@@ -708,13 +704,13 @@ def drillTipLength(tool):
     """returns the length of the drillbit tip."""
 
     if not hasattr(tool, "TipAngle"):
-        Path.Log.error(translate("Path", "Selected tool is not a drill"))
+        logger.error(translate("Path", "Selected tool is not a drill"))
         return 0.0
 
     angle = tool.TipAngle
 
     if angle <= 0 or angle >= 180:
-        Path.Log.error(
+        logger.error(
             translate("Path", "Invalid Cutting Edge Angle %.2f, must be >0° and <=180°") % angle
         )
         return 0.0
@@ -723,7 +719,7 @@ def drillTipLength(tool):
     length = (float(tool.Diameter) / 2) / math.tan(theta / 2)
 
     if length < 0:
-        Path.Log.error(
+        logger.error(
             translate("Path", "Cutting Edge Angle (%.2f) results in negative tool tip length")
             % angle
         )

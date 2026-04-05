@@ -37,8 +37,7 @@ __author__ = "sliptonic (Brad Collette)"
 __url__ = "https://www.freecad.org"
 __doc__ = "Helper class to use FreeCADGUi.Snapper to let the user enter arbitrary points while the task panel is active."
 
-Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
-# Path.Log.track(Path.Log.thisModule())
+logger = Path.Log.getModuleLogger(withLevel=Path.Log.Level.INFO, enableTracking=None)
 
 
 class TaskPanel:

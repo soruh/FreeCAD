@@ -38,11 +38,7 @@ __doc__ = "Implementation of circular hole specific base geometry page controlle
 
 LOGLEVEL = False
 
-if LOGLEVEL:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.NOTICE, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.NOTICE, LOGLEVEL)
 
 
 # Column indices for baseList table
@@ -209,7 +205,7 @@ class TaskPanelHoleGeometryPage(PathOpGui.TaskPanelBaseGeometryPage):
 
     def setFields(self, obj):
         """setFields(obj) ... fill form with values from obj"""
-        Path.Log.track()
+        logger.track()
         self.form.baseList.blockSignals(True)
         self.form.baseList.clearContents()
         self.form.baseList.setRowCount(0)
@@ -285,7 +281,7 @@ class TaskPanelHoleGeometryPage(PathOpGui.TaskPanelBaseGeometryPage):
 
     def itemActivated(self):
         """itemActivated() ... callback when item in table is selected"""
-        Path.Log.track()
+        logger.track()
         selected_rows = set(item.row() for item in self.form.baseList.selectedItems())
         if selected_rows:
             self.form.deleteBase.setEnabled(True)
@@ -297,7 +293,7 @@ class TaskPanelHoleGeometryPage(PathOpGui.TaskPanelBaseGeometryPage):
                 if obj_name is not None:
                     obj = FreeCAD.ActiveDocument.getObject(obj_name)
                     if obj is not None:
-                        Path.Log.debug("itemActivated() -> %s.%s" % (obj.Label, sub))
+                        logger.debug("itemActivated() -> %s.%s" % (obj.Label, sub))
                         if sub:
                             FreeCADGui.Selection.addSelection(obj, sub)
                         else:
@@ -307,7 +303,7 @@ class TaskPanelHoleGeometryPage(PathOpGui.TaskPanelBaseGeometryPage):
 
     def deleteBase(self):
         """deleteBase() ... callback for Remove button"""
-        Path.Log.track()
+        logger.track()
         selected = [self.form.baseList.row(item) for item in self.form.baseList.selectedItems()]
         self.form.baseList.blockSignals(True)
         for row in sorted(list(set(selected)), key=lambda row: -row):
@@ -321,7 +317,7 @@ class TaskPanelHoleGeometryPage(PathOpGui.TaskPanelBaseGeometryPage):
 
     def updateBase(self):
         """updateBase() ... helper function to transfer current table to obj"""
-        Path.Log.track()
+        logger.track()
         newlist = []
         for i in range(self.form.baseList.rowCount()):
             item = self.form.baseList.item(i, COL_FEATURE)
@@ -331,16 +327,16 @@ class TaskPanelHoleGeometryPage(PathOpGui.TaskPanelBaseGeometryPage):
                 obj = FreeCAD.ActiveDocument.getObject(obj_name)
                 if obj is not None:
                     base = (obj, sub)
-                    Path.Log.debug("keeping (%s.%s)" % (obj.Label, sub))
+                    logger.debug("keeping (%s.%s)" % (obj.Label, sub))
                     newlist.append(base)
-        Path.Log.debug("obj.Base=%s newlist=%s" % (self.obj.Base, newlist))
+        logger.debug("obj.Base=%s newlist=%s" % (self.obj.Base, newlist))
         self.updating = True
         self.obj.Base = newlist
         self.updating = False
 
     def checkedChanged(self):
         """checkeChanged() ... callback when checked status of a base feature changed"""
-        Path.Log.track()
+        logger.track()
         disabled = []
         for i in range(0, self.form.baseList.rowCount()):
             item = self.form.baseList.item(i, COL_FEATURE)

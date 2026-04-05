@@ -44,11 +44,7 @@ __doc__ = "Base class and properties for Path.Area based operations."
 __contributors__ = "russ4262 (Russell Johnson) davidgilkaufman (David Kaufman)"
 
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 translate = FreeCAD.Qt.translate
 
@@ -83,7 +79,7 @@ class ObjectOp(PathOp.ObjectOp):
     def initOperation(self, obj):
         """initOperation(obj) ... sets up standard Path.Area properties and calls initAreaOp().
         Do not overwrite, overwrite initAreaOp(obj) instead."""
-        Path.Log.track()
+        logger.track()
 
         # Debugging
         obj.addProperty("App::PropertyString", "AreaParams", "Path")
@@ -112,12 +108,12 @@ class ObjectOp(PathOp.ObjectOp):
         The default implementation returns the job's Base.Shape"""
         if job:
             if job.Stock:
-                Path.Log.debug("job=%s base=%s shape=%s" % (job, job.Stock, job.Stock.Shape))
+                logger.debug("job=%s base=%s shape=%s" % (job, job.Stock, job.Stock.Shape))
                 return job.Stock.Shape
             else:
-                Path.Log.warning(translate("PathAreaOp", "job %s has no Base.") % job.Label)
+                logger.warning(translate("PathAreaOp", "job %s has no Base.") % job.Label)
         else:
-            Path.Log.warning(translate("PathAreaOp", "no job for operation %s found.") % obj.Label)
+            logger.warning(translate("PathAreaOp", "no job for operation %s found.") % obj.Label)
         return None
 
     def areaOpOnChanged(self, obj, prop):
@@ -130,7 +126,7 @@ class ObjectOp(PathOp.ObjectOp):
         The base implementation takes a stab at determining Heights and Depths if the operations's Base
         changes.
         Do not overwrite, overwrite areaOpOnChanged(obj, prop) instead."""
-        # Path.Log.track(obj.Label, prop)
+        # logger.track(obj.Label, prop)
         if prop in ("AreaParams", "PathParams", "removalshape"):
             obj.setEditorMode(prop, 2)
 
@@ -147,7 +143,7 @@ class ObjectOp(PathOp.ObjectOp):
         self.areaOpOnChanged(obj, prop)
 
     def opOnDocumentRestored(self, obj):
-        Path.Log.track()
+        logger.track()
         for prop in ["AreaParams", "PathParams", "removalshape"]:
             if hasattr(obj, prop):
                 obj.setEditorMode(prop, 2)
@@ -170,18 +166,18 @@ class ObjectOp(PathOp.ObjectOp):
         The base implementation sets the depths and heights based on the
         areaOpShapeForDepths() return value.
         Do not overwrite, overwrite areaOpSetDefaultValues(obj, job) instead."""
-        Path.Log.debug("opSetDefaultValues(%s, %s)" % (obj.Label, job.Label))
+        logger.debug("opSetDefaultValues(%s, %s)" % (obj.Label, job.Label))
 
         if PathOp.FeatureDepths & self.opFeatures(obj):
             try:
                 shape = self.areaOpShapeForDepths(obj, job)
             except Exception as ee:
-                Path.Log.error(ee)
+                logger.error(ee)
                 shape = None
 
             # Set initial start and final depths
             if shape is None:
-                Path.Log.debug("shape is None")
+                logger.debug("shape is None")
                 startDepth = 1.0
                 finalDepth = 0.0
             else:
@@ -192,12 +188,12 @@ class ObjectOp(PathOp.ObjectOp):
             obj.OpStartDepth.Value = startDepth
             obj.OpFinalDepth.Value = finalDepth
 
-            Path.Log.debug(
+            logger.debug(
                 "Default OpDepths are Start: {}, and Final: {}".format(
                     obj.OpStartDepth.Value, obj.OpFinalDepth.Value
                 )
             )
-            Path.Log.debug(
+            logger.debug(
                 "Default Depths are Start: {}, and Final: {}".format(startDepth, finalDepth)
             )
 
@@ -267,7 +263,7 @@ class ObjectOp(PathOp.ObjectOp):
 
     def _buildPathArea(self, obj, baseobject, isHole, start, getsim):
         """_buildPathArea(obj, baseobject, isHole, start, getsim) ... internal function."""
-        Path.Log.track()
+        logger.track()
         area = Path.Area()
         area.setPlane(PathUtils.makeWorkplane(baseobject))
         area.add(baseobject)
@@ -276,14 +272,14 @@ class ObjectOp(PathOp.ObjectOp):
         areaParams["SectionTolerance"] = FreeCAD.Base.Precision.confusion() * 10  # basically 1e-06
 
         heights = [i for i in self.depthparams]
-        Path.Log.debug("depths: {}".format(heights))
+        logger.debug("depths: {}".format(heights))
         area.setParams(**areaParams)
         obj.AreaParams = str(area.getParams())
 
-        Path.Log.debug("Area with params: {}".format(area.getParams()))
+        logger.debug("Area with params: {}".format(area.getParams()))
 
         sections = area.makeSections(mode=0, project=self.areaOpUseProjection(obj), heights=heights)
-        Path.Log.debug("sections = %s" % sections)
+        logger.debug("sections = %s" % sections)
 
         # Rest machining
         if hasattr(obj, "UseRestMachining") and obj.UseRestMachining:
@@ -299,7 +295,7 @@ class ObjectOp(PathOp.ObjectOp):
             sections = restSections
 
         shapelist = [sec.getShape() for sec in sections]
-        Path.Log.debug("shapelist = %s" % shapelist)
+        logger.debug("shapelist = %s" % shapelist)
 
         pathParams = self.areaOpPathParams(obj, isHole)
         pathParams["shapes"] = shapelist
@@ -337,10 +333,10 @@ class ObjectOp(PathOp.ObjectOp):
             pathParams["start"] = obj.StartPoint
 
         obj.PathParams = str({key: value for key, value in pathParams.items() if key != "shapes"})
-        Path.Log.debug("Path with params: {}".format(obj.PathParams))
+        logger.debug("Path with params: {}".format(obj.PathParams))
 
         pp, end_vector = Path.fromShapes(**pathParams)
-        Path.Log.debug("pp: {}, end vector: {}".format(pp, end_vector))
+        logger.debug("pp: {}, end vector: {}".format(pp, end_vector))
 
         # Keep track of this segment's end only if it has movement (otherwise end_vector is 0,0,0 and the next segment will unnecessarily start there)
         if pp.Size > 0:
@@ -358,11 +354,11 @@ class ObjectOp(PathOp.ObjectOp):
 
     def _buildProfileOpenEdges(self, obj, edgeList, isHole, start, getsim):
         """_buildPathArea(obj, edgeList, isHole, start, getsim) ... internal function."""
-        Path.Log.track()
+        logger.track()
 
         paths = []
         heights = [i for i in self.depthparams]
-        Path.Log.debug("depths: {}".format(heights))
+        logger.debug("depths: {}".format(heights))
         for i in range(0, len(heights)):
             for baseShape in edgeList:
                 hWire = Part.Wire(Part.__sortEdges__(baseShape.Edges))
@@ -402,11 +398,11 @@ class ObjectOp(PathOp.ObjectOp):
                 obj.PathParams = str(
                     {key: value for key, value in pathParams.items() if key != "shapes"}
                 )
-                Path.Log.debug("Path with params: {}".format(obj.PathParams))
+                logger.debug("Path with params: {}".format(obj.PathParams))
 
                 pp, end_vector = Path.fromShapes(**pathParams)
                 paths.extend(pp.Commands)
-                Path.Log.debug("pp: {}, end vector: {}".format(pp, end_vector))
+                logger.debug("pp: {}, end vector: {}".format(pp, end_vector))
 
         self.endVector = end_vector
         simobj = None
@@ -422,7 +418,7 @@ class ObjectOp(PathOp.ObjectOp):
             areaOpShapes(obj)             ... the shape for path area to process
             areaOpUseProjection(obj)      ... return true if operation can use projection
         instead."""
-        Path.Log.track()
+        logger.track()
 
         # Instantiate class variables for operation reference
         self.endVector = None
@@ -500,7 +496,7 @@ class ObjectOp(PathOp.ObjectOp):
                     Path.Command("G0", {"Z": obj.ClearanceHeight.Value, "F": self.vertRapid})
                 )
 
-        Path.Log.debug("obj.Name: " + str(obj.Name) + "\n\n")
+        logger.debug("obj.Name: " + str(obj.Name) + "\n\n")
         return sims
 
     def areaOpAreaParams(self, obj, isHole):

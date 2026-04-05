@@ -62,11 +62,7 @@ else:
 translate = FreeCAD.Qt.translate
 
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class PathNoActiveDocumentException(Exception):
@@ -85,7 +81,7 @@ class PathNoJobException(Exception):
 
 def open(filename):
     """called when freecad opens a file."""
-    Path.Log.track(filename)
+    logger.track(filename)
     docname = os.path.splitext(os.path.basename(filename))[0]
     doc = FreeCAD.newDocument(docname)
     insert(filename, doc.Name)
@@ -139,7 +135,7 @@ def parse(inputstring):
     axis = ["X", "Y", "Z", "A", "B", "C", "U", "V", "W"]
 
     FreeCAD.Console.PrintMessage("preprocessing...\n")
-    Path.Log.track(inputstring)
+    logger.track(inputstring)
     # split the input by line
     lines = inputstring.splitlines()
     output = []
@@ -182,7 +178,7 @@ def parse(inputstring):
 
 def _identifygcodeByToolNumberList(filename):
     """called when freecad imports a file"""
-    Path.Log.track(filename)
+    logger.track(filename)
     gcodeByToolNumberList = []
 
     gfile = pyopen(filename)
@@ -216,16 +212,16 @@ def _identifygcodeByToolNumberList(filename):
 
 def insert(filename, docname=None):
     """called when freecad imports a file"""
-    Path.Log.track(filename)
+    logger.track(filename)
 
     try:
         if not _isImportEnvironmentReady():
             return
     except PathNoActiveDocumentException:
-        Path.Log.error(translate("CAM_Gcode_pre", "No active document"))
+        logger.error(translate("CAM_Gcode_pre", "No active document"))
         return
     except PathNoJobException:
-        Path.Log.error(translate("CAM_Gcode_pre", "No job object"))
+        logger.error(translate("CAM_Gcode_pre", "No job object"))
         return
 
     # Create a Custom operation for each gcode-toolNumber pair

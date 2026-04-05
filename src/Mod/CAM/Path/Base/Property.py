@@ -28,8 +28,7 @@ __url__ = "https://www.freecad.org"
 __doc__ = "Prototype objects to allow extraction of setup sheet values and editing."
 
 
-Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
-# Path.Log.trackModule(Path.Log.thisModule())
+logger = Path.Log.getModuleLogger(withLevel=Path.Log.Level.INFO, enableTracking=None)
 
 
 class Property(object):

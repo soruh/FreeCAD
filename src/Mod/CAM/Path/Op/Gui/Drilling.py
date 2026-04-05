@@ -38,11 +38,7 @@ __url__ = "https://www.freecad.org"
 __doc__ = "UI and Command for Drilling Operation."
 __contributors__ = "IMBack!"
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class TaskPanelOpPage(PathCircularHoleBaseGui.TaskPanelOpPage):
@@ -141,7 +137,7 @@ class TaskPanelOpPage(PathCircularHoleBaseGui.TaskPanelOpPage):
         # This will be called when strategy changes to Tapping
         # Could show warning if tool doesn't have Pitch property
         # For now, just log - actual validation happens at execution time
-        Path.Log.debug("Tapping strategy selected - tool will be validated at execution")
+        logger.debug("Tapping strategy selected - tool will be validated at execution")
 
     def getForm(self):
         """getForm() ... return UI"""
@@ -159,7 +155,7 @@ class TaskPanelOpPage(PathCircularHoleBaseGui.TaskPanelOpPage):
 
     def getFields(self, obj):
         """setFields(obj) ... update obj's properties with values from the UI"""
-        Path.Log.track()
+        logger.track()
         self.peckDepthSpinBox.updateProperty()
         self.dwellTimeSpinBox.updateProperty()
 
@@ -185,7 +181,7 @@ class TaskPanelOpPage(PathCircularHoleBaseGui.TaskPanelOpPage):
 
     def setFields(self, obj):
         """setFields(obj) ... update UI with obj properties' values"""
-        Path.Log.track()
+        logger.track()
         self.updateQuantitySpinBoxes()
 
         # Set Strategy selector

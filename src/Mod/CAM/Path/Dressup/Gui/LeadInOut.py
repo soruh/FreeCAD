@@ -41,11 +41,7 @@ from PySide.QtCore import QT_TRANSLATE_NOOP
 
 translate = App.Qt.translate
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 lead_styles = (
     # common options first
@@ -244,7 +240,7 @@ class ObjectDressup:
         self.toolController = toolControllerForOp(obj.Base)
         if not self.toolController:
             obj.Path = Path.Path()
-            Path.Log.warning(
+            logger.warning(
                 translate(
                     "CAM_DressupLeadInOut", "Tool controller not selected for base operation: %s"
                 )
@@ -1143,7 +1139,7 @@ class ObjectDressup:
                 cmds.append(newInstr)
                 return cmds
 
-        Path.Log.warning(translate("CAM", "Exceeded length in cutTravelEnd"))
+        logger.warning(translate("CAM", "Exceeded length in cutTravelEnd"))
         return []
 
     # Cut travel from begin by distance
@@ -1164,7 +1160,7 @@ class ObjectDressup:
                 cmds.insert(0, newInstr)
                 return cmds
 
-        Path.Log.warning(translate("CAM", "Exceeded length in cutTravelBegin"))
+        logger.warning(translate("CAM", "Exceeded length in cutTravelBegin"))
         return []
 
     # Change end point of instruction
@@ -1523,7 +1519,7 @@ class ViewProviderDressup:
 
     def onDelete(self, arg1=None, arg2=None):
         """this makes sure that the base operation is added back to the project and visible"""
-        Path.Log.debug("Deleting Dressup")
+        logger.debug("Deleting Dressup")
         if arg1.Object and arg1.Object.Base:
             FreeCADGui.ActiveDocument.getObject(arg1.Object.Base.Name).Visibility = True
             job = PathUtils.findParentJob(self.obj)
@@ -1602,4 +1598,4 @@ if App.GuiUp:
     # register the FreeCAD command
     FreeCADGui.addCommand("CAM_DressupLeadInOut", CommandPathDressupLeadInOut())
 
-Path.Log.notice("Loading CAM_DressupLeadInOut… done\n")
+logger.notice("Loading CAM_DressupLeadInOut… done\n")

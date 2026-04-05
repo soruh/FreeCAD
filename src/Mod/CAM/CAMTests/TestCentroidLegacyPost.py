@@ -28,8 +28,7 @@ import Path
 from CAMTests import PathTestUtils
 from Path.Post.scripts import centroid_legacy_post as postprocessor
 
-Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-Path.Log.trackModule(Path.Log.thisModule())
+logger = Path.Log.getModuleLogger(withLevel=Path.Log.Level.DEBUG, enableTracking=True)
 
 
 class TestCentroidLegacyPost(PathTestUtils.PathTestBase):

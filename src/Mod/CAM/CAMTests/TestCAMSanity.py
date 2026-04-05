@@ -38,6 +38,8 @@ import urllib
 import tempfile
 from CAMTests.PathTestUtils import PathTestBase
 
+logger = Path.Log.getModuleLogger()
+
 
 class TestCAMSanity(PathTestBase):
     @classmethod
@@ -297,10 +299,10 @@ class TestCAMSanity(PathTestBase):
     #     """Test Post Processing a File"""
 
     #     def exportObjectsWith(objs, partname, job, sequence, postname):
-    #         Path.Log.track(partname, sequence)
-    #         Path.Log.track(objs)
+    #         logger.track(partname, sequence)
+    #         logger.track(objs)
 
-    #         Path.Log.track(objs, partname)
+    #         logger.track(objs, partname)
 
     #         postArgs = Path.Preferences.defaultPostProcessorArgs()
     #         if hasattr(job, "PostProcessorArgs") and job.PostProcessorArgs:
@@ -308,7 +310,7 @@ class TestCAMSanity(PathTestBase):
     #         elif hasattr(job, "PostProcessor") and job.PostProcessor:
     #             postArgs = ""
 
-    #         Path.Log.track(postArgs)
+    #         logger.track(postArgs)
 
     #         filename = f"output-{partname}-{sequence}.ngc"
 

@@ -36,11 +36,7 @@ import FreeCAD
 translate = FreeCAD.Qt.translate
 
 DEBUG = False
-if DEBUG:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, DEBUG)
 
 #
 # Define some types that are used throughout this file.
@@ -71,7 +67,7 @@ class Smoothie(PostProcessor):
             tooltipargs=tooltipargs,
             units=units,
         )
-        Path.Log.debug("Refactored SmoothieBoard post processor initialized.")
+        logger.debug("Refactored SmoothieBoard post processor initialized.")
         self.ip_addr: Optional[str] = None
         self.verbose: bool = False
 
@@ -146,12 +142,12 @@ M2"""
             # Update SmoothieBoard-specific values from parsed arguments
             if hasattr(args, "ip_addr") and args.ip_addr:
                 self.ip_addr = args.ip_addr
-                Path.Log.info(f"SmoothieBoard IP address set to: {self.ip_addr}")
+                logger.info(f"SmoothieBoard IP address set to: {self.ip_addr}")
 
             if hasattr(args, "verbose"):
                 self.verbose = args.verbose
                 if self.verbose:
-                    Path.Log.info("Verbose mode enabled")
+                    logger.info("Verbose mode enabled")
 
         return flag, args
 

@@ -38,11 +38,7 @@ __url__ = "https://www.freecad.org"
 __doc__ = "Class and implementation of the 3D Pocket operation."
 __created__ = "2014"
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 translate = FreeCAD.Qt.translate
@@ -126,11 +122,11 @@ class ObjectPocket(PathPocketBase.ObjectPocket):
         data = list()
         idx = 0 if dataType == "translated" else 1
 
-        Path.Log.debug(enums)
+        logger.debug(enums)
 
         for k, v in enumerate(enums):
             data.append((v, [tup[idx] for tup in enums[v]]))
-        Path.Log.debug(data)
+        logger.debug(data)
 
         return data
 
@@ -154,15 +150,15 @@ class ObjectPocket(PathPocketBase.ObjectPocket):
 
     def areaOpShapes(self, obj):
         """areaOpShapes(obj) ... return shapes representing the solids to be removed."""
-        Path.Log.track()
+        logger.track()
 
         subObjTups = []
         removalshapes = []
 
         if obj.Base:
-            Path.Log.debug("base items exist.  Processing... ")
+            logger.debug("base items exist.  Processing... ")
             for base in obj.Base:
-                Path.Log.debug("obj.Base item: {}".format(base))
+                logger.debug("obj.Base item: {}".format(base))
 
                 # Check if all subs are faces
                 allSubsFaceType = True
@@ -182,7 +178,7 @@ class ObjectPocket(PathPocketBase.ObjectPocket):
                 if allSubsFaceType is True and obj.HandleMultipleFeatures == "Collectively":
                     fzmin, fzmax = self.getMinMaxOfFaces(Faces)
                     if obj.FinalDepth.Value < fzmin:
-                        Path.Log.warning(
+                        logger.warning(
                             translate(
                                 "CAM",
                                 "Final depth set below ZMin of face(s) selected.",
@@ -222,7 +218,7 @@ class ObjectPocket(PathPocketBase.ObjectPocket):
                         removalshapes.append((obj.removalshape, False, "3DPocket"))
 
         else:  # process the job base object as a whole
-            Path.Log.debug("processing the whole job base object")
+            logger.debug("processing the whole job base object")
             for base in self.model:
                 if obj.ProcessStockArea is True:
                     job = PathUtils.findParentJob(obj)
@@ -312,8 +308,8 @@ class ObjectPocket(PathPocketBase.ObjectPocket):
             try:
                 highFaceShape = Part.Face(Part.Wire(Part.__sortEdges__(allEdges)))
             except Exception as ee:
-                Path.Log.warning(ee)
-                Path.Log.error(
+                logger.warning(ee)
+                logger.error(
                     translate(
                         "CAM",
                         "A planar adaptive start is unavailable. The non-planar will be attempted.",
@@ -329,8 +325,8 @@ class ObjectPocket(PathPocketBase.ObjectPocket):
                         Part.__sortEdges__(allEdges)
                     )  # NON-planar face method
                 except Exception as eee:
-                    Path.Log.warning(eee)
-                    Path.Log.error(
+                    logger.warning(eee)
+                    logger.error(
                         translate("CAM", "The non-planar adaptive start is also unavailable.")
                         + "(1)"
                     )
@@ -349,13 +345,13 @@ class ObjectPocket(PathPocketBase.ObjectPocket):
                 mx = hzmax + obj.StepDown.Value
                 mn = hzmin - obj.StepDown.Value
                 if highFace.Shape.BoundBox.ZMax > mx or highFace.Shape.BoundBox.ZMin < mn:
-                    Path.Log.warning(
+                    logger.warning(
                         "ZMaxDiff: {};  ZMinDiff: {}".format(
                             highFace.Shape.BoundBox.ZMax - mx,
                             highFace.Shape.BoundBox.ZMin - mn,
                         )
                     )
-                    Path.Log.error(
+                    logger.error(
                         translate("CAM", "The non-planar adaptive start is also unavailable.")
                         + "(2)"
                     )
@@ -376,8 +372,8 @@ class ObjectPocket(PathPocketBase.ObjectPocket):
                 lowFaceShape = Part.Face(Part.Wire(Part.__sortEdges__(allEdges)))
                 # lowFaceShape = Part.makeFilledFace(Part.__sortEdges__(allEdges))  # NON-planar face method
             except Exception as ee:
-                Path.Log.error(ee)
-                Path.Log.error("An adaptive finish is unavailable.")
+                logger.error(ee)
+                logger.error("An adaptive finish is unavailable.")
                 isLowFacePlanar = False
             else:
                 FreeCAD.ActiveDocument.addObject("Part::Feature", "bottomEdgeFace")
@@ -606,7 +602,7 @@ class ObjectPocket(PathPocketBase.ObjectPocket):
                     for ei2 in range(0, len(face2.Edges)):
                         edg2 = face2.Edges[ei2]
                         if edg1.isSame(edg2) is True:
-                            Path.Log.debug(
+                            logger.debug(
                                 "{}.Edges[{}] connects at {}.Edges[{}]".format(sub1, ei1, sub2, ei2)
                             )
                             shared.append((sub1, face1, ei1))
@@ -675,7 +671,7 @@ class ObjectPocket(PathPocketBase.ObjectPocket):
         Compare vertexes of two edges to identify a common vertex.
         Returns the vertex index of edge1 to which edge2 is connected"""
         if show is True:
-            Path.Log.info("New findCommonVertex()... ")
+            logger.info("New findCommonVertex()... ")
 
         oIdx = 0
         listOne = edge1.Vertexes
@@ -684,15 +680,15 @@ class ObjectPocket(PathPocketBase.ObjectPocket):
         # Find common vertexes
         for o in listOne:
             if show is True:
-                Path.Log.info("   one ({}, {}, {})".format(o.X, o.Y, o.Z))
+                logger.info("   one ({}, {}, {})".format(o.X, o.Y, o.Z))
             for t in listTwo:
                 if show is True:
-                    Path.Log.error("two ({}, {}, {})".format(t.X, t.Y, t.Z))
+                    logger.error("two ({}, {}, {})".format(t.X, t.Y, t.Z))
                 if o.X == t.X:
                     if o.Y == t.Y:
                         if o.Z == t.Z:
                             if show is True:
-                                Path.Log.info("found")
+                                logger.info("found")
                             return oIdx
             oIdx += 1
         return -1
@@ -744,7 +740,7 @@ class ObjectPocket(PathPocketBase.ObjectPocket):
 
         while len(holds) > 0:
             if loops > 500:
-                Path.Log.error("BREAK --- LOOPS LIMIT of 500 ---")
+                logger.error("BREAK --- LOOPS LIMIT of 500 ---")
                 break
             save = False
 

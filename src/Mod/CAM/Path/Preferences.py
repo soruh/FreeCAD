@@ -30,11 +30,7 @@ import pathlib
 from collections import defaultdict
 from typing import Optional
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 translate = FreeCAD.Qt.translate
@@ -155,7 +151,7 @@ def getAssetPath() -> pathlib.Path:
 
 
 def setAssetPath(path: pathlib.Path):
-    Path.Log.debug(f"Setting asset path to {path}")
+    logger.debug(f"Setting asset path to {path}")
     assert path.is_dir(), f"Cannot put a non-initialized asset directory into preferences: {path}"
     pref = tool_preferences()
     current_path = pref.GetString(ToolPath, "")
@@ -405,7 +401,7 @@ def defaultJobTemplate():
 
 
 def setJobDefaults(jobTemplate, geometryTolerance, curveAccuracy):
-    Path.Log.track("(%s, %s, %s)" % (jobTemplate, geometryTolerance, curveAccuracy))
+    logger.track("(%s, %s, %s)" % (jobTemplate, geometryTolerance, curveAccuracy))
     pref = preferences()
     pref.SetString(DefaultJobTemplate, jobTemplate)
     pref.SetFloat(GeometryTolerance, geometryTolerance)

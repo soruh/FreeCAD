@@ -55,15 +55,7 @@ DEBUG = False
 
 
 # Set logging level based on DEBUG flag
-def _setup_logging():
-    if DEBUG:
-        Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-        Path.Log.trackModule(Path.Log.thisModule())
-    else:
-        Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
-
-
-_setup_logging()
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, DEBUG)
 
 # Define types
 Values = Dict[str, Any]
@@ -142,7 +134,7 @@ class OpenSBPPost(PostProcessor):
             tooltipargs=tooltipargs,
             units=units,
         )
-        Path.Log.debug("OpenSBP post processor initialized.")
+        logger.debug("OpenSBP post processor initialized.")
 
         # Track current speeds for OpenSBP (separate XY and Z speeds)
         self._current_move_speed_xy = None

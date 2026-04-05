@@ -30,11 +30,7 @@ __url__ = "https://www.freecad.org"
 __doc__ = "Generates the rotation toolpath"
 
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class SpindleDirection(Enum):
@@ -49,7 +45,7 @@ def generate(toolnumber, toollabel, spindlespeed=0, spindledirection=SpindleDire
 
     """
 
-    Path.Log.track(
+    logger.track(
         f"toolnumber:{toolnumber} toollabel: {toollabel} spindlespeed:{spindlespeed} spindledirection: {spindledirection}"
     )
 
@@ -70,7 +66,7 @@ def generate(toolnumber, toollabel, spindlespeed=0, spindledirection=SpindleDire
     else:
         commands.append(Path.Command(spindledirection.value, {"S": spindlespeed}))
 
-    Path.Log.track(commands)
+    logger.track(commands)
     return commands
 
 

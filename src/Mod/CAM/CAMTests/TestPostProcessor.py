@@ -32,8 +32,7 @@ import Path.Main.Job as PathJob
 import unittest
 from Path.Post.Processor import _HeaderBuilder
 
-PathCommand.LOG_MODULE = Path.Log.thisModule()
-Path.Log.setLevel(Path.Log.Level.INFO, PathCommand.LOG_MODULE)
+logger = Path.Log.getModuleLogger(withLevel=Path.Log.Level.INFO)
 
 
 class TestResolvingPostProcessorName(unittest.TestCase):

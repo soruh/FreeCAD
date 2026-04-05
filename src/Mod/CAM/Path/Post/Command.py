@@ -38,18 +38,14 @@ from PySide.QtCore import QT_TRANSLATE_NOOP
 LOG_MODULE = Path.Log.thisModule()
 
 DEBUG = True
-if DEBUG:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, DEBUG)
 
 
 translate = FreeCAD.Qt.translate
 
 
 def _resolve_post_processor_name(job):
-    Path.Log.debug("_resolve_post_processor_name()")
+    logger.debug("_resolve_post_processor_name()")
     if job.PostProcessor:
         valid_name = job.PostProcessor
     elif Path.Preferences.defaultPostProcessor():
@@ -160,7 +156,7 @@ class CommandPathPost:
             dlg.selectFile(os.path.basename(filename))
             if dlg.exec_():
                 filename = dlg.selectedFiles()[0]
-                Path.Log.debug(filename)
+                logger.debug(filename)
                 with open(filename, "w", encoding="utf-8", newline=newline_handling) as f:
                     f.write(gcode)
             else:
@@ -182,7 +178,7 @@ class CommandPathPost:
                 dlg.selectFile(os.path.basename(filename))
                 if dlg.exec_():
                     filename = dlg.selectedFiles()[0]
-                    Path.Log.debug(filename)
+                    logger.debug(filename)
                     with open(filename, "w", encoding="utf-8", newline=newline_handling) as f:
                         f.write(gcode)
                 else:
@@ -202,7 +198,7 @@ class CommandPathPost:
         Handles the activation of post processing, initiating the process based
         on user selection and document context.
         """
-        Path.Log.debug(self.candidate.Name)
+        logger.debug(self.candidate.Name)
 
         # Determine if we use new flow (machine-based) or old flow (legacy)
         # New flow: Job has Machine property -> get postprocessor from machine config -> use export2()
@@ -224,7 +220,7 @@ class CommandPathPost:
         FreeCAD.ActiveDocument.openTransaction("Post Process the Selected Job")
 
         if use_new_flow:
-            Path.Log.debug("Using new flow (machine-based)")
+            logger.debug("Using new flow (machine-based)")
             # New flow: Get postprocessor from machine configuration
             try:
                 machine = MachineFactory.get_machine(self.candidate.Machine)
@@ -242,7 +238,7 @@ class CommandPathPost:
                 FreeCAD.ActiveDocument.abortTransaction()
                 return
         else:
-            Path.Log.debug("Using old flow (legacy)")
+            logger.debug("Using old flow (legacy)")
             # Old flow: Get postprocessor from job property
             try:
                 postprocessor_name = _resolve_post_processor_name(self.candidate)
@@ -251,7 +247,7 @@ class CommandPathPost:
                 FreeCAD.ActiveDocument.abortTransaction()
                 return
 
-        Path.Log.debug(f"Post Processor: {postprocessor_name}")
+        logger.debug(f"Post Processor: {postprocessor_name}")
 
         if not postprocessor_name:
             FreeCAD.ActiveDocument.abortTransaction()
@@ -289,7 +285,7 @@ class CommandPathPost:
 
             # get a name for the file
             subpart = "" if subpart == "allitems" else subpart
-            Path.Log.debug(subpart)
+            logger.debug(subpart)
             generator.set_subpartname(subpart)
             fname = next(generated_filename)
 
@@ -395,7 +391,7 @@ class CommandPathPostSelected(CommandPathPost):
                 operations = opCandidates
 
         postprocessor_name = _resolve_post_processor_name(job)
-        Path.Log.debug(f"Post Processor: {postprocessor_name}")
+        logger.debug(f"Post Processor: {postprocessor_name}")
 
         if not postprocessor_name:
             FreeCAD.ActiveDocument.abortTransaction()
@@ -422,7 +418,7 @@ class CommandPathPostSelected(CommandPathPost):
 
             # get a name for the file
             subpart = "" if subpart == "allitems" else subpart
-            Path.Log.debug(subpart)
+            logger.debug(subpart)
             generator.set_subpartname(subpart)
             fname = next(generated_filename)
 

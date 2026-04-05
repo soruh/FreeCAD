@@ -41,11 +41,7 @@ __doc__ = "Class and implementation of Mill Facing operation."
 __contributors__ = "russ4262 (Russell Johnson)"
 
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 translate = FreeCAD.Qt.translate
 
@@ -79,16 +75,16 @@ class ObjectFace(PathPocketBase.ObjectPocket):
         data = list()
         idx = 0 if dataType == "translated" else 1
 
-        Path.Log.debug(enums)
+        logger.debug(enums)
 
         for k, v in enumerate(enums):
             data.append((v, [tup[idx] for tup in enums[v]]))
-        Path.Log.debug(data)
+        logger.debug(data)
 
         return data
 
     def initPocketOp(self, obj):
-        Path.Log.track()
+        logger.track()
         """initPocketOp(obj) ... create facing specific properties"""
         obj.addProperty(
             "App::PropertyEnumeration",
@@ -120,7 +116,7 @@ class ObjectFace(PathPocketBase.ObjectPocket):
 
     def areaOpOnChanged(self, obj, prop):
         """areaOpOnChanged(obj, prop) ... facing specific depths calculation."""
-        Path.Log.track(prop)
+        logger.track(prop)
         if prop == "StepOver" and obj.StepOver == 0:
             obj.StepOver = 1
 
@@ -131,7 +127,7 @@ class ObjectFace(PathPocketBase.ObjectPocket):
                 obj.OpStartDepth = job.Stock.Shape.BoundBox.ZMax
 
             if len(obj.Base) >= 1:
-                Path.Log.debug("processing")
+                logger.debug("processing")
                 sublist = []
                 for i in obj.Base:
                     o = i[0]
@@ -152,10 +148,10 @@ class ObjectFace(PathPocketBase.ObjectPocket):
         self.removalshapes = []
         holeShape = None
 
-        Path.Log.debug("depthparams: {}".format([i for i in self.depthparams]))
+        logger.debug("depthparams: {}".format([i for i in self.depthparams]))
 
         if obj.Base:
-            Path.Log.debug("obj.Base: {}".format(obj.Base))
+            logger.debug("obj.Base: {}".format(obj.Base))
             faces = []
             holes = []
             holeEnvs = []
@@ -183,7 +179,7 @@ class ObjectFace(PathPocketBase.ObjectPocket):
                                 else:
                                     holes.append((b[0].Shape, wire))
                     else:
-                        Path.Log.warning(
+                        logger.warning(
                             'The base subobject, "{0}," is not a face. Ignoring "{0}."'.format(sub)
                         )
 
@@ -194,16 +190,16 @@ class ObjectFace(PathPocketBase.ObjectPocket):
                     holeEnvs.append(env)
                     holeShape = Part.makeCompound(holeEnvs)
 
-            Path.Log.debug("Working on a collection of faces {}".format(faces))
+            logger.debug("Working on a collection of faces {}".format(faces))
             planeshape = Part.makeCompound(faces)
 
         # If no base object, do planing of top surface of entire model
         else:
             planeshape = Part.makeCompound([base.Shape for base in self.model])
-            Path.Log.debug("Working on a shape {}".format(obj.Label))
+            logger.debug("Working on a shape {}".format(obj.Label))
 
         # Find the correct shape depending on Boundary shape.
-        Path.Log.debug("Boundary Shape: {}".format(obj.BoundaryShape))
+        logger.debug("Boundary Shape: {}".format(obj.BoundaryShape))
         bb = planeshape.BoundBox
 
         # Apply offset for clearing edges
@@ -283,12 +279,12 @@ class ObjectFace(PathPocketBase.ObjectPocket):
                 env = ofstShapeEnv
 
         if holeShape:
-            Path.Log.debug("Processing holes and face ...")
+            logger.debug("Processing holes and face ...")
             holeEnv = PathUtils.getEnvelope(partshape=holeShape, depthparams=self.depthparams)
             newEnv = env.cut(holeEnv)
             tup = newEnv, False, "pathMillFace"
         else:
-            Path.Log.debug("Processing solid face ...")
+            logger.debug("Processing solid face ...")
             tup = env, False, "pathMillFace"
 
         self.removalshapes.append(tup)

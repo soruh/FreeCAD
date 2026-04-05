@@ -76,7 +76,7 @@ class CamoticsToolBitSerializer(AssetSerializer):
         if not isinstance(asset, RotaryToolBitMixin):
             lbl = asset.label
             name = asset.get_shape_name()
-            Path.Log.info(
+            logger.info(
                 f"Skipping export of toolbit {lbl} ({name}) because it is not a rotary tool."
             )
             return b"{}"

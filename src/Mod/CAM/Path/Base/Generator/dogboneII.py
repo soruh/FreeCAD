@@ -25,7 +25,7 @@ import Path
 import Path.Base.Language as PathLanguage
 import math
 
-# Path.Log.trackModule(Path.Log.thisModule())
+logger = Path.Log.getModuleLogger(enableTracking=None)
 
 PI = math.pi
 

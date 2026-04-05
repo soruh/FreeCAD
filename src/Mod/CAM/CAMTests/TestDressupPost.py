@@ -29,8 +29,7 @@ import CAMTests.PathTestUtils as PathTestUtils
 from Path.Post.Processor import PostProcessorFactory
 import Path.Dressup.Utils as PathDressup
 
-Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-Path.Log.trackModule(Path.Log.thisModule())
+logger = Path.Log.getModuleLogger(withLevel=Path.Log.Level.DEBUG, enableTracking=True)
 
 
 class TestDressupPost(PathTestUtils.PathTestBase):

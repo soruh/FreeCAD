@@ -46,11 +46,7 @@ __doc__ = "Base classes and framework for CAM operation's UI"
 
 translate = FreeCAD.Qt.translate
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class ViewProvider(object):
@@ -62,7 +58,7 @@ class ViewProvider(object):
     """
 
     def __init__(self, vobj, resources):
-        Path.Log.track()
+        logger.track()
         self.deleteOnReject = True
         self.OpIcon = ":/icons/%s.svg" % resources.pixmap
         self.OpName = resources.name
@@ -77,7 +73,7 @@ class ViewProvider(object):
         self._selected = False  # Track selection state
 
     def attach(self, vobj):
-        Path.Log.track()
+        logger.track()
         self.vobj = vobj
         self.Object = vobj.Object
         self.panel = None
@@ -196,17 +192,17 @@ class ViewProvider(object):
         edit session, if the user does not press OK, it is assumed they've
         changed their mind about creating the operation.
         """
-        Path.Log.track()
+        logger.track()
         return hasattr(self, "deleteOnReject") and self.deleteOnReject
 
     def setDeleteObjectsOnReject(self, state=False):
-        Path.Log.track()
+        logger.track()
         self.deleteOnReject = state
         return self.deleteOnReject
 
     def setEdit(self, vobj=None, mode=0):
         """setEdit(vobj, mode=0) ... initiate editing of receivers model."""
-        Path.Log.track()
+        logger.track()
         if 0 == mode:
             if vobj is None:
                 vobj = self.vobj
@@ -236,7 +232,7 @@ class ViewProvider(object):
         if job:
             job.ViewObject.Proxy.setupEditVisibility(job)
         else:
-            Path.Log.info("did not find no job")
+            logger.info("did not find no job")
 
     def clearTaskPanel(self):
         """clearTaskPanel() ... internal callback function when editing has finished."""
@@ -256,7 +252,7 @@ class ViewProvider(object):
     def dumps(self):
         """dumps() ... callback before receiver is saved to a file.
         Returns a dictionary with the receiver's resources as strings."""
-        Path.Log.track()
+        logger.track()
         state = {}
         state["OpName"] = self.OpName
         state["OpIcon"] = self.OpIcon
@@ -296,7 +292,7 @@ class ViewProvider(object):
     def updateData(self, obj, prop):
         """updateData(obj, prop) ... callback whenever a property of the receiver's model is assigned.
         The callback is forwarded to the task panel - in case an editing session is ongoing."""
-        # Path.Log.track(obj.Label, prop) # Creates a lot of noise
+        # logger.track(obj.Label, prop) # Creates a lot of noise
         if self.panel:
             self.panel.updateData(obj, prop)
 
@@ -309,7 +305,7 @@ class ViewProvider(object):
         return True
 
     def setupContextMenu(self, vobj, menu):
-        Path.Log.track()
+        logger.track()
         for action in menu.actions():
             menu.removeAction(action)
         action = QtGui.QAction(translate("PathOp", "Edit"), menu)
@@ -700,7 +696,7 @@ class TaskPanelPage(object):
                     self.tcEditor.controller, layout.rowCount(), 0, 1, layout.columnCount()
                 )
             else:
-                Path.Log.error(
+                logger.error(
                     "Panel uses a layout incompatible with editing tool controllers. Report a bug: it should be a QGridLayout"
                 )
 
@@ -880,7 +876,7 @@ class TaskPanelBaseGeometryPage(TaskPanelPage):
         return True
 
     def addBaseGeometry(self, selection):
-        Path.Log.track(selection)
+        logger.track(selection)
         added = False
         for sel in selection:
             # check each selection
@@ -891,7 +887,7 @@ class TaskPanelBaseGeometryPage(TaskPanelPage):
         return added
 
     def addBase(self):
-        Path.Log.track()
+        logger.track()
         if self.addBaseGeometry(FreeCADGui.Selection.getSelectionEx()):
             # self.obj.Proxy.execute(self.obj)
             self.setFields(self.obj)
@@ -899,7 +895,7 @@ class TaskPanelBaseGeometryPage(TaskPanelPage):
             self.updatePanelVisibility("Operation", self.obj)
 
     def deleteBase(self):
-        Path.Log.track()
+        logger.track()
         selected = self.form.baseList.selectedItems()
         for item in selected:
             self.form.baseList.takeItem(self.form.baseList.row(item))
@@ -917,7 +913,7 @@ class TaskPanelBaseGeometryPage(TaskPanelPage):
             if sub:
                 base = (obj, str(sub))
                 newlist.append(base)
-        Path.Log.debug("Setting new base: %s -> %s" % (self.obj.Base, newlist))
+        logger.debug("Setting new base: %s -> %s" % (self.obj.Base, newlist))
         self.obj.Base = newlist
 
     def clearBase(self):
@@ -971,7 +967,7 @@ class TaskPanelBaseGeometryPage(TaskPanelPage):
         qList = self.form.baseList
         row = (qList.count() + qList.frameWidth()) * 15
         # qList.setMinimumHeight(row)
-        Path.Log.debug(
+        logger.debug(
             "baseList({}, {}) {} * {}".format(
                 qList.size(), row, qList.count(), qList.sizeHintForRow(0)
             )
@@ -1038,7 +1034,7 @@ class TaskPanelBaseLocationPage(TaskPanelPage):
         FreeCAD.ActiveDocument.recompute()
 
     def updateLocations(self):
-        Path.Log.track()
+        logger.track()
         locations = []
         for i in range(self.formLoc.baseList.rowCount()):
             x = self.formLoc.baseList.item(i, 0).data(self.DataLocation)
@@ -1261,7 +1257,7 @@ class TaskPanelDepthsPage(TaskPanelPage):
     def depthSet(self, obj, spinbox, prop):
         z = self.selectionZLevel(FreeCADGui.Selection.getSelectionEx())
         if z is not None:
-            Path.Log.debug("depthSet(%s, %s, %.2f)" % (obj.Label, prop, z))
+            logger.debug("depthSet(%s, %s, %.2f)" % (obj.Label, prop, z))
             if spinbox.expression():
                 obj.setExpression(prop, None)
                 self.setDirty()
@@ -1269,7 +1265,7 @@ class TaskPanelDepthsPage(TaskPanelPage):
             if spinbox.updateProperty():
                 self.setDirty()
         else:
-            Path.Log.info("depthSet(-)")
+            logger.info("depthSet(-)")
 
     def selectionZLevel(self, sel):
         if len(sel) == 1 and len(sel[0].SubObjects) == 1:
@@ -1343,7 +1339,7 @@ class TaskPanel(object):
     """
 
     def __init__(self, obj, deleteOnReject, opPage, selectionFactory):
-        Path.Log.track(obj.Label, deleteOnReject, opPage, selectionFactory)
+        logger.track(obj.Label, deleteOnReject, opPage, selectionFactory)
         FreeCAD.ActiveDocument.openTransaction(translate("PathOp", "AreaOp Operation"))
         self.obj = obj
         self.deleteOnReject = deleteOnReject
@@ -1475,7 +1471,7 @@ class TaskPanel(object):
                 PathUtil.clearExpressionEngine(self.obj)
                 FreeCAD.ActiveDocument.removeObject(self.obj.Name)
             except Exception as ee:
-                Path.Log.debug("{}\n".format(ee))
+                logger.debug("{}\n".format(ee))
             FreeCAD.ActiveDocument.commitTransaction()
         self.cleanup(resetEdit)
         return True
@@ -1516,20 +1512,20 @@ class TaskPanel(object):
 
     def panelGetFields(self):
         """panelGetFields() ... invoked to trigger a complete transfer of UI data to the model."""
-        Path.Log.track()
+        logger.track()
         for page in self.featurePages:
             page.pageGetFields()
 
     def panelSetFields(self):
         """panelSetFields() ... invoked to trigger a complete transfer of the model's properties to the UI."""
-        Path.Log.track()
+        logger.track()
         self.obj.Proxy.sanitizeBase(self.obj)
         for page in self.featurePages:
             page.pageSetFields()
 
     def panelCleanup(self):
         """panelCleanup() ... invoked before the receiver is destroyed."""
-        Path.Log.track()
+        logger.track()
         for page in self.featurePages:
             page.pageCleanup()
 
@@ -1546,7 +1542,7 @@ class TaskPanel(object):
 
     def setupUi(self):
         """setupUi() ... internal function to initialise all pages."""
-        Path.Log.track(self.deleteOnReject)
+        logger.track(self.deleteOnReject)
 
         if self.deleteOnReject and PathOp.FeatureBaseGeometry & self.obj.Proxy.opFeatures(self.obj):
             sel = FreeCADGui.Selection.getSelectionEx()
@@ -1575,7 +1571,7 @@ class TaskPanel(object):
 
     def updateData(self, obj, prop):
         """updateDate(obj, prop) ... callback invoked whenever a model's property is assigned a value."""
-        # Path.Log.track(obj.Label, prop) # creates a lot of noise
+        # logger.track(obj.Label, prop) # creates a lot of noise
         for page in self.featurePages:
             page.pageUpdateData(obj, prop)
 
@@ -1662,7 +1658,7 @@ def Create(res):
         diag.setWindowModality(QtCore.Qt.ApplicationModal)
         diag.exec_()
     except PathOp.PathNoTCException:
-        Path.Log.warning(translate("PathOp", "No tool controller, aborting op creation"))
+        logger.warning(translate("PathOp", "No tool controller, aborting op creation"))
 
     FreeCAD.ActiveDocument.abortTransaction()
     FreeCAD.ActiveDocument.recompute()

@@ -35,11 +35,7 @@ __doc__ = "Base class for all ops in the engrave family."
 DraftGeomUtils = LazyLoader("DraftGeomUtils", globals(), "DraftGeomUtils")
 Part = LazyLoader("Part", globals(), "Part")
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class ObjectOp(PathOp.ObjectOp):
@@ -62,7 +58,7 @@ class ObjectOp(PathOp.ObjectOp):
 
     def buildpathocc(self, obj, wires, zValues, relZ=False, forward=True, start_idx=0):
         """buildpathocc(obj, wires, zValues, relZ=False) ... internal helper function to generate engraving commands."""
-        Path.Log.track(obj.Label, len(wires), zValues)
+        logger.track(obj.Label, len(wires), zValues)
 
         tol = self.job.GeometryTolerance.Value if getattr(self, "job", None) else 0.01
 
@@ -89,14 +85,14 @@ class ObjectOp(PathOp.ObjectOp):
             edges = wire.Edges
 
             # edges = copy.copy(PathOpUtil.orientWire(offset, forward).Edges)
-            # Path.Log.track("wire: {} offset: {}".format(len(wire.Edges), len(edges)))
+            # logger.track("wire: {} offset: {}".format(len(wire.Edges), len(edges)))
             # edges = Part.sortEdges(edges)[0]
-            # Path.Log.track("edges: {}".format(len(edges)))
+            # logger.track("edges: {}".format(len(edges)))
 
             last = None
 
             for z in zValues:
-                Path.Log.debug(z)
+                logger.debug(z)
                 if last and wire.isClosed():
                     # Add step down to next Z for closed profile
                     self.appendCommand(
@@ -112,17 +108,17 @@ class ObjectOp(PathOp.ObjectOp):
 
                 edges = edges[start_idx:] + edges[:start_idx]
                 for edge in edges:
-                    Path.Log.debug(
+                    logger.debug(
                         "points: {} -> {}".format(edge.Vertexes[0].Point, edge.Vertexes[-1].Point)
                     )
-                    Path.Log.debug(
+                    logger.debug(
                         "valueat {} -> {}".format(
                             edge.valueAt(edge.FirstParameter),
                             edge.valueAt(edge.LastParameter),
                         )
                     )
                     if first and (not last or not wire.isClosed()):
-                        Path.Log.debug("processing first edge entry")
+                        logger.debug("processing first edge entry")
                         # Add moves to first point of wire
                         last = edge.Vertexes[0].Point
 

@@ -27,8 +27,7 @@ import Path.Base.Generator.rotation as generator
 import CAMTests.PathTestUtils as PathTestUtils
 import numpy as np
 
-Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
-Path.Log.trackModule(Path.Log.thisModule())
+logger = Path.Log.getModuleLogger(withLevel=Path.Log.Level.INFO, enableTracking=True)
 
 
 class TestPathRotationGenerator(PathTestUtils.PathTestBase):
@@ -75,7 +74,7 @@ class TestPathRotationGenerator(PathTestUtils.PathTestBase):
         result = generator.generate(**args)
         self.assertTrue(len(result) == 2)
 
-        Path.Log.debug(result)
+        logger.debug(result)
 
     def test20(self):
         """Test non-zero rotation"""
@@ -92,11 +91,11 @@ class TestPathRotationGenerator(PathTestUtils.PathTestBase):
         result = generator.generate(**args)
 
         command = result[0]
-        Path.Log.debug(command.Parameters)
+        logger.debug(command.Parameters)
         self.assertTrue(np.isclose(command.Parameters["A"], 54.736))
         self.assertTrue(np.isclose(command.Parameters["C"], 45))
 
-        Path.Log.track(result)
+        logger.track(result)
 
     def test30(self):
         """Test A limits"""
@@ -109,7 +108,7 @@ class TestPathRotationGenerator(PathTestUtils.PathTestBase):
         args["aMax"] = 0
 
         result = generator.generate(**args)
-        Path.Log.debug(result)
+        logger.debug(result)
 
         command = result[0]
         self.assertTrue(np.isclose(command.Parameters["A"], -54.736))
@@ -120,7 +119,7 @@ class TestPathRotationGenerator(PathTestUtils.PathTestBase):
         args["aMax"] = 90
 
         result = generator.generate(**args)
-        Path.Log.debug(result)
+        logger.debug(result)
 
         command = result[0]
         self.assertTrue(np.isclose(command.Parameters["A"], 54.736))
@@ -137,7 +136,7 @@ class TestPathRotationGenerator(PathTestUtils.PathTestBase):
         args["cMax"] = 0
 
         result = generator.generate(**args)
-        Path.Log.debug(result)
+        logger.debug(result)
 
         command = result[0]
         self.assertTrue(np.isclose(command.Parameters["A"], -54.736))
@@ -148,7 +147,7 @@ class TestPathRotationGenerator(PathTestUtils.PathTestBase):
         args["cMax"] = 180
 
         result = generator.generate(**args)
-        Path.Log.debug(result)
+        logger.debug(result)
 
         command = result[0]
         self.assertTrue(np.isclose(command.Parameters["A"], 54.736))

@@ -31,11 +31,7 @@ from Path.Tool.toolbit import ToolBit
 import Path.Base.Generator.toolchange as toolchange
 import Path.Dressup.Utils as PathDressup
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.ERROR, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.ERROR, False)
 
 translate = FreeCAD.Qt.translate
 
@@ -135,7 +131,7 @@ def _migrateRampDressups(tc):
 
 class ToolController:
     def __init__(self, obj, createTool=True):
-        Path.Log.track("tool: ")
+        logger.track("tool: ")
 
         obj.addProperty(
             "App::PropertyIntegerConstraint",
@@ -239,11 +235,11 @@ class ToolController:
         data = list()
         idx = 0 if dataType == "translated" else 1
 
-        Path.Log.debug(enums)
+        logger.debug(enums)
 
         for k, v in enumerate(enums):
             data.append((v, [tup[idx] for tup in enums[v]]))
-        Path.Log.debug(data)
+        logger.debug(data)
 
         return data
 
@@ -310,7 +306,7 @@ class ToolController:
         setFromTemplate(obj, xmlItem) ... extract properties from xmlItem
         and assign to receiver.
         """
-        Path.Log.track(obj.Name, template)
+        logger.track(obj.Name, template)
         version = 0
         if template.get(ToolControllerTemplate.Version):
             version = int(template.get(ToolControllerTemplate.Version))
@@ -351,11 +347,11 @@ class ToolController:
                     else:
                         obj.Tool = None
                         if toolVersion == 1:
-                            Path.Log.error(
+                            logger.error(
                                 f"{obj.Name} - legacy Tools no longer supported - ignoring"
                             )
                         else:
-                            Path.Log.error(
+                            logger.error(
                                 f"{obj.Name} - unknown Tool version {toolVersion} - ignoring"
                             )
                     if obj.Tool and obj.Tool.ViewObject and obj.Tool.ViewObject.Visibility:
@@ -368,13 +364,13 @@ class ToolController:
                                 exprDef[ToolControllerTemplate.ExprExpr],
                             )
             else:
-                Path.Log.error(
+                logger.error(
                     "Unsupported PathToolController template version {}".format(
                         template.get(ToolControllerTemplate.Version)
                     )
                 )
         else:
-            Path.Log.error("PathToolController template has no version - corrupted template file?")
+            logger.error("PathToolController template has no version - corrupted template file?")
 
     def templateAttrs(self, obj):
         """templateAttrs(obj) ... answer a dictionary with all properties that should be stored for a template."""
@@ -395,7 +391,7 @@ class ToolController:
         attrs[ToolControllerTemplate.Tool] = obj.Tool.Proxy.to_dict()
         expressions = []
         for expr in obj.ExpressionEngine:
-            Path.Log.debug("%s: %s" % (expr[0], expr[1]))
+            logger.debug("%s: %s" % (expr[0], expr[1]))
             expressions.append(
                 {
                     ToolControllerTemplate.ExprProp: expr[0],
@@ -407,7 +403,7 @@ class ToolController:
         return attrs
 
     def execute(self, obj):
-        Path.Log.track(obj.Name)
+        logger.track(obj.Name)
 
         args = {
             "toolnumber": obj.ToolNumber,
@@ -425,7 +421,7 @@ class ToolController:
 
     def getTool(self, obj):
         """returns the tool associated with this tool controller"""
-        Path.Log.track()
+        logger.track()
         return obj.Tool
 
     def ensureToolBit(self, obj):
@@ -446,7 +442,7 @@ def Create(
     assignTool=True,
 ):
 
-    Path.Log.track(name, tool, toolNumber, assignViewProvider, assignTool)
+    logger.track(name, tool, toolNumber, assignViewProvider, assignTool)
 
     obj = FreeCAD.ActiveDocument.addObject("Path::FeaturePython", name)
     obj.Label = name
@@ -461,7 +457,7 @@ def Create(
         if not tool:
             # Create a default endmill tool bit and attach it to a new DocumentObject
             toolbit = ToolBit.from_shape_id("endmill.fcstd")
-            Path.Log.info(f"Controller.Create: Created toolbit with ID: {toolbit.id}")
+            logger.info(f"Controller.Create: Created toolbit with ID: {toolbit.id}")
             tool = toolbit.attach_to_doc(doc=FreeCAD.ActiveDocument)
             if tool.ViewObject:
                 tool.ViewObject.Visibility = False
@@ -492,7 +488,7 @@ def copyTC(tc, job):
 
 
 def FromTemplate(template, assignViewProvider=True):
-    Path.Log.track()
+    logger.track()
 
     name = template.get(ToolControllerTemplate.Name, ToolControllerTemplate.Label)
     obj = Create(name, assignViewProvider=True, assignTool=False)

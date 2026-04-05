@@ -36,11 +36,7 @@ __doc__ = "Helix operation page controller and command implementation."
 
 LOGLEVEL = False
 
-if LOGLEVEL:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.NOTICE, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.NOTICE, LOGLEVEL)
 
 
 class TaskPanelOpPage(PathCircularHoleBaseGui.TaskPanelOpPage):
@@ -70,7 +66,7 @@ class TaskPanelOpPage(PathCircularHoleBaseGui.TaskPanelOpPage):
 
     def getFields(self, obj):
         """getFields(obj) ... transfers values from UI to obj's properties"""
-        Path.Log.track()
+        logger.track()
         self.helixPitchSpinBox.updateProperty()
         self.radialStockToLeaveOuterSpinBox.updateProperty()
 
@@ -87,7 +83,7 @@ class TaskPanelOpPage(PathCircularHoleBaseGui.TaskPanelOpPage):
 
     def setFields(self, obj):
         """setFields(obj) ... transfers obj's property values to UI"""
-        Path.Log.track()
+        logger.track()
         self.updateQuantitySpinBoxes()
 
         self.form.stepOverPercent.setValue(obj.StepOver)

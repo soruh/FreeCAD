@@ -214,7 +214,7 @@ class DressupArray:
     def execute(self, obj):
 
         if not obj.Base or not obj.Base.isDerivedFrom("Path::Feature") or not obj.Base.Path:
-            Path.Log.error(translate("PathArray", "Base is empty or an invalid object."))
+            logger.error(translate("PathArray", "Base is empty or an invalid object."))
             return None
 
         # Do not generate paths and clear current Path data if operation not active
@@ -295,7 +295,7 @@ class PathArray:
         path data for the requested path array."""
 
         if self.base is None:
-            Path.Log.error(translate("PathArray", "No base objects for PathArray."))
+            logger.error(translate("PathArray", "No base objects for PathArray."))
             return None
 
         base = self.base
@@ -400,7 +400,7 @@ def Create(base, name="DressupArray"):
     """Create(base, name='DressupPathBoundary') ... creates a dressup array."""
 
     if not base.isDerivedFrom("Path::Feature"):
-        Path.Log.error(translate("CAM_DressupArray", "The selected object is not a path") + "\n")
+        logger.error(translate("CAM_DressupArray", "The selected object is not a path") + "\n")
         return None
 
     obj = FreeCAD.ActiveDocument.addObject("Path::FeaturePython", name)

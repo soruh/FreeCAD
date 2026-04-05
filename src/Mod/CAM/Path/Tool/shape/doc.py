@@ -28,6 +28,8 @@ from typing import Dict, List, Any, Optional, Tuple
 import tempfile
 import os
 
+logger = Path.Log.getModuleLogger()
+
 
 def find_shape_object(doc: "FreeCAD.Document") -> Optional["FreeCAD.DocumentObject"]:
     """
@@ -100,7 +102,7 @@ def get_object_properties(
             properties[name] = value, type_id
         else:
             # Log a warning if a parameter expected by the shape class is missing
-            Path.Log.debug(
+            logger.debug(
                 f"Parameter '{name}' not found on object '{obj.Label}' "
                 f"({obj.Name}). Default value will be used by the shape class."
             )
@@ -123,13 +125,13 @@ def update_shape_object_properties(
             try:
                 PathUtil.setProperty(obj, name, value)
             except Exception as e:
-                Path.Log.warning(
+                logger.warning(
                     f"Failed to set property '{name}' on object '{obj.Label}'"
                     f" ({obj.Name}) with value '{value}': {e}"
                 )
         else:
             # This simply means that the Shape File doesn't have this property in it.
-            Path.Log.debug(
+            logger.debug(
                 f"Property '{name}' not found on object '{obj.Label}' ({obj.Name}). Skipping."
             )
 
@@ -209,4 +211,4 @@ class ShapeDocFromBytes:
             try:
                 os.remove(self._temp_file)
             except Exception as e:
-                Path.Log.warning(f"Failed to remove temporary file {self._temp_file}: {e}")
+                logger.warning(f"Failed to remove temporary file {self._temp_file}: {e}")

@@ -39,11 +39,7 @@ __url__ = "https://www.freecad.org"
 __doc__ = "Class and implementation of face extensions features."
 
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 translate = FreeCAD.Qt.translate
 
@@ -95,7 +91,7 @@ def selectOffsetWire(feature, wires):
 
 def extendWire(feature, wire, length):
     """extendWire(wire, length) ... return a closed Wire which extends wire by length"""
-    Path.Log.track(length)
+    logger.track(length)
 
     if not length or length == 0:
         return None
@@ -103,7 +99,7 @@ def extendWire(feature, wire, length):
     try:
         off2D = wire.makeOffset2D(length)
     except FreeCAD.Base.FreeCADError as ee:
-        Path.Log.debug(ee)
+        logger.debug(ee)
         return None
     endPts = endPoints(wire)  # Assumes wire is NOT closed
     if endPts:
@@ -158,7 +154,7 @@ def readObjExtensionFeature(obj):
 
 
 def getExtensions(obj):
-    Path.Log.debug("getExtenstions()")
+    logger.debug("getExtenstions()")
     extensions = []
     i = 0
 
@@ -171,7 +167,7 @@ def getExtensions(obj):
 
 
 def setExtensions(obj, extensions):
-    Path.Log.track(obj.Label, len(extensions))
+    logger.track(obj.Label, len(extensions))
     obj.ExtensionFeature = [(ext.obj, ext.getSubLink()) for ext in extensions]
 
 
@@ -219,7 +215,7 @@ class Extension(object):
     DirectionY = 2
 
     def __init__(self, op, obj, feature, sub, length, direction):
-        Path.Log.debug(
+        logger.debug(
             "Extension(%s, %s, %s, %.2f, %s" % (obj.Label, feature, sub, length, direction)
         )
         self.op = op
@@ -229,7 +225,7 @@ class Extension(object):
         self.length = length
         self.direction = direction
         self.extFaces = None
-        self.isDebug = True if Path.Log.getLevel(Path.Log.thisModule()) == 4 else False
+        self.isDebug = True if logger.getLevel() == 4 else False
 
         self.avoid = False
         if sub.startswith("Avoid_"):
@@ -241,7 +237,7 @@ class Extension(object):
         return "%s:%s" % (self.feature, self.sub)
 
     def _extendEdge(self, feature, e0, direction):
-        Path.Log.track(feature, e0, direction)
+        logger.track(feature, e0, direction)
         if isinstance(e0.Curve, Part.Line) or isinstance(e0.Curve, Part.LineSegment):
             e2 = e0.copy()
             off = self.length.Value * direction
@@ -265,7 +261,7 @@ class Extension(object):
         else:
             numbers = [self.sub[4:]]
 
-        Path.Log.debug("_getEdgeNumbers() -> %s" % numbers)
+        logger.debug("_getEdgeNumbers() -> %s" % numbers)
         return numbers
 
     def _getEdgeNames(self):
@@ -289,7 +285,7 @@ class Extension(object):
         e0 = wire.Edges[0]
         midparam = e0.FirstParameter + 0.5 * (e0.LastParameter - e0.FirstParameter)
         tangent = e0.tangentAt(midparam)
-        Path.Log.track("tangent", tangent, self.feature, self.sub)
+        logger.track("tangent", tangent, self.feature, self.sub)
         normal = tangent.cross(FreeCAD.Vector(0, 0, 1))
         if Path.Geom.pointsCoincide(normal, FreeCAD.Vector(0, 0, 0)):
             return None
@@ -319,11 +315,11 @@ class Extension(object):
         """_getRegularWire()... Private method to retrieve the extension area, pertaining to the feature
         and sub element provided at class instantiation, as a closed wire.  If no closed wire
         is possible, a `None` value is returned."""
-        Path.Log.track()
+        logger.track()
 
         length = self.length.Value
         if Path.Geom.isRoughly(0, length) or not self.sub:
-            Path.Log.debug("no extension, length=%.2f, sub=%s" % (length, self.sub))
+            logger.debug("no extension, length=%.2f, sub=%s" % (length, self.sub))
             return None
 
         feature = self.obj.Shape.getElement(self.feature)
@@ -331,10 +327,10 @@ class Extension(object):
         sub = Part.Wire(Part.sortEdges(edges)[0])
 
         if 1 == len(edges):
-            Path.Log.debug("Extending single edge wire")
+            logger.debug("Extending single edge wire")
             edge = edges[0]
             if Part.Circle == type(edge.Curve):
-                Path.Log.debug("is Part.Circle")
+                logger.debug("is Part.Circle")
                 circle = edge.Curve
                 # for a circle we have to figure out if it's a hole or a cylinder
                 p0 = edge.valueAt(edge.FirstParameter)
@@ -350,7 +346,7 @@ class Extension(object):
 
                 # assuming the offset produces a valid circle - go for it
                 if r > 0:
-                    Path.Log.debug("radius > 0 - extend outward")
+                    logger.debug("radius > 0 - extend outward")
                     e3 = Part.makeCircle(
                         r,
                         circle.Center,
@@ -369,7 +365,7 @@ class Extension(object):
                         )
 
                     if endPoints(edge):
-                        Path.Log.debug("Make section of donut")
+                        logger.debug("Make section of donut")
                         # need to construct the arc slice
                         e0 = Part.makeLine(
                             edge.valueAt(edge.FirstParameter),
@@ -393,22 +389,22 @@ class Extension(object):
                     self.extFaces = [self._makeCircularExtFace(edge, extWire)]
                     return extWire
 
-                Path.Log.debug("radius < 0 - extend inward")
+                logger.debug("radius < 0 - extend inward")
                 # the extension is bigger than the hole - so let's just cover the whole hole
                 if endPoints(edge):
                     # if the resulting arc is smaller than the radius, create a pie slice
-                    Path.Log.track()
+                    logger.track()
                     center = circle.Center
                     e0 = Part.makeLine(center, edge.valueAt(edge.FirstParameter))
                     e2 = Part.makeLine(edge.valueAt(edge.LastParameter), center)
                     return Part.Wire([e0, edge, e2])
 
-                Path.Log.track()
+                logger.track()
                 return Part.Wire([edge])
 
             else:
-                Path.Log.debug("else is NOT Part.Circle")
-                Path.Log.track(self.feature, self.sub, type(edge.Curve), endPoints(edge))
+                logger.debug("else is NOT Part.Circle")
+                logger.track(self.feature, self.sub, type(edge.Curve), endPoints(edge))
                 direction = self._getDirection(sub)
                 if direction is None:
                     return None
@@ -416,7 +412,7 @@ class Extension(object):
             return self._extendEdge(feature, edges[0], direction)
 
         elif sub.isClosed():
-            Path.Log.debug("Extending multi-edge closed wire")
+            logger.debug("Extending multi-edge closed wire")
             subFace = Part.Face(sub)
             featFace = Part.Face(feature.Wires[0])
             isOutside = True
@@ -427,7 +423,7 @@ class Extension(object):
             try:
                 off2D = sub.makeOffset2D(length)
             except FreeCAD.Base.FreeCADError as ee:
-                Path.Log.debug(ee)
+                logger.debug(ee)
                 return None
 
             if isOutside:
@@ -436,7 +432,7 @@ class Extension(object):
                 self.extFaces = [subFace.cut(Part.Face(off2D))]
             return off2D
 
-        Path.Log.debug("Extending multi-edge open wire")
+        logger.debug("Extending multi-edge open wire")
         extendedWire = extendWire(feature, sub, length)
         if extendedWire is None:
             return extendedWire
@@ -532,7 +528,7 @@ def getExtendOutlineFace(base_shape, face, extension, remHoles=False, offset_tol
         face, extension, removeHoles=remHoles, plane=face, tolerance=offset_tolerance
     )
     if not offset_face:
-        Path.Log.error("Failed to offset a selected face.")
+        logger.error("Failed to offset a selected face.")
         return None
 
     # Apply collision detection by limiting extended face using base shape
@@ -573,7 +569,7 @@ def getExtendOutlineFace(base_shape, face, extension, remHoles=False, offset_tol
 
         return extended
 
-    Path.Log.error("No bottom face for extend outline.")
+    logger.error("No bottom face for extend outline.")
     return None
 
 

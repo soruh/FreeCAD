@@ -36,11 +36,7 @@ from Path.Tool.toolbit.ui.selector import ToolBitSelector
 Part = LazyLoader("Part", globals(), "Part")
 
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 translate = FreeCAD.Qt.translate
 
@@ -109,7 +105,7 @@ class ViewProvider:
         return False
 
     def setupContextMenu(self, vobj, menu):
-        Path.Log.track()
+        logger.track()
         for action in menu.actions():
             menu.removeAction(action)
         action = QtGui.QAction(translate("CAM", "Edit"), menu)
@@ -127,7 +123,7 @@ class ViewProvider:
 
 
 def Create(name="Default Tool", tool=None, toolNumber=1):
-    Path.Log.track(tool, toolNumber)
+    logger.track(tool, toolNumber)
 
     obj = PathToolController.Create(name, tool, toolNumber)
     ViewProvider(obj.ViewObject)
@@ -161,7 +157,7 @@ class CommandPathToolController(object):
         return self.selectedJob() is not None
 
     def Activated(self):
-        Path.Log.track()
+        logger.track()
         job = self.selectedJob()
         if not job:
             return
@@ -321,7 +317,7 @@ class ToolControllerEditor(object):
                     tc.Tool = self.editor.tool
 
         except Exception as e:
-            Path.Log.error("Error updating TC: {}".format(e))
+            logger.error("Error updating TC: {}".format(e))
 
     def changed(self):
         self.form.blockSignals(True)
@@ -418,7 +414,7 @@ class DlgToolControllerEdit:
 
         rc = False
         if not self.editor.form.exec_():
-            Path.Log.info("revert")
+            logger.info("revert")
             self.obj.Proxy.setFromTemplate(self.obj, restoreTC)
             rc = True
         else:

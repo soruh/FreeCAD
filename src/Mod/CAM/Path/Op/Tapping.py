@@ -41,11 +41,7 @@ __url__ = "https://www.freecad.org"
 __doc__ = "Path Tapping operation."
 __contributors__ = "luvtofish (Dan Henderson)"
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 translate = FreeCAD.Qt.translate
 
@@ -83,11 +79,11 @@ class ObjectTapping(PathCircularHoleBase.ObjectOp):
         data = list()
         idx = 0 if dataType == "translated" else 1
 
-        Path.Log.debug(enums)
+        logger.debug(enums)
 
         for k, v in enumerate(enums):
             data.append((v, [tup[idx] for tup in enums[v]]))
-        Path.Log.debug(data)
+        logger.debug(data)
 
         return data
 
@@ -98,7 +94,7 @@ class ObjectTapping(PathCircularHoleBase.ObjectOp):
     def initCircularHoleOperation(self, obj):
         """initCircularHoleOperation(obj) ... add tapping specific properties to obj."""
         # DEPRECATED: This operation is deprecated. Use Drilling operation with Strategy=Tapping instead.
-        Path.Log.warning(
+        logger.warning(
             "DEPRECATED: The Tapping operation is deprecated and will be removed in a future release. "
             "Please use the Drilling operation with Strategy set to 'Tapping' instead. "
             "Existing Tapping operations will continue to work but you cannot create new ones."
@@ -152,11 +148,11 @@ class ObjectTapping(PathCircularHoleBase.ObjectOp):
 
     def circularHoleExecute(self, obj, holes):
         """circularHoleExecute(obj, holes) ... generate tapping operation for each hole in holes."""
-        Path.Log.track()
+        logger.track()
         machine = PathMachineState.MachineState()
 
         if not hasattr(obj.ToolController.Tool, "Pitch"):
-            Path.Log.error(
+            logger.error(
                 translate(
                     "Path_Tapping",
                     "Tapping Operation requires a Tap tool with Pitch",
@@ -200,7 +196,7 @@ class ObjectTapping(PathCircularHoleBase.ObjectOp):
 
         # iterate the edgelist and generate gcode
         for edge in edgelist:
-            Path.Log.debug(edge)
+            logger.debug(edge)
 
             # move to hole location
 
@@ -236,7 +232,7 @@ class ObjectTapping(PathCircularHoleBase.ObjectOp):
             # Get pitch in mm as a float (no unit string)
             pitch = getattr(obj.ToolController.Tool, "Pitch", None)
             if pitch is None or pitch == 0:
-                Path.Log.error(
+                logger.error(
                     translate(
                         "Path_Tapping",
                         "Tapping Operation requires a Tap tool with non-zero Pitch",
@@ -246,7 +242,7 @@ class ObjectTapping(PathCircularHoleBase.ObjectOp):
 
             spindle_speed = getattr(obj.ToolController, "SpindleSpeed", None)
             if spindle_speed is None or spindle_speed == 0:
-                Path.Log.error(
+                logger.error(
                     translate(
                         "Path_Tapping",
                         "Tapping Operation requires a ToolController with non-zero SpindleSpeed",
@@ -266,7 +262,7 @@ class ObjectTapping(PathCircularHoleBase.ObjectOp):
                 )
 
             except ValueError as e:  # any targets that fail the generator are ignored
-                Path.Log.info(e)
+                logger.info(e)
                 continue
 
             for command in tappingcommands:

@@ -38,8 +38,7 @@ from .toollist import ToolBitListWidget, CompactToolBitListWidget, ToolBitUriRol
 from .editor import ToolBitEditor
 from .util import natural_sort_key
 
-Path.Log.setLevel(Path.Log.Level.ERROR, Path.Log.thisModule())
-Path.Log.trackModule(Path.Log.thisModule())
+logger = Path.Log.getModuleLogger(withLevel=Path.Log.Level.ERROR, enableTracking=True)
 
 
 class ToolBitBrowserWidget(QtGui.QWidget):
@@ -172,7 +171,7 @@ class ToolBitBrowserWidget(QtGui.QWidget):
             self._all_assets = self.tool_fetcher()
         finally:
             self._is_fetching = False
-        Path.Log.debug(f"Loaded {len(self._all_assets)} ToolBits.")
+        logger.debug(f"Loaded {len(self._all_assets)} ToolBits.")
 
         self._sort_assets()
         self._update_list()
@@ -319,7 +318,7 @@ class ToolBitBrowserWidget(QtGui.QWidget):
 
         # If the editor was closed with "OK", save the changes
         self._asset_manager.add(toolbit)
-        Path.Log.info(f"Toolbit {toolbit.get_id()} saved.")
+        logger.info(f"Toolbit {toolbit.get_id()} saved.")
         self.refresh()
         self._update_list()
 
@@ -415,10 +414,10 @@ class ToolBitBrowserWidget(QtGui.QWidget):
 
     def _on_delete_requested(self):
         """Deletes selected toolbits and removes them from all libraries."""
-        Path.Log.debug("ToolBitBrowserWidget._on_delete_requested: Function entered.")
+        logger.debug("ToolBitBrowserWidget._on_delete_requested: Function entered.")
         uris = self.get_selected_bit_uris()
         if not uris:
-            Path.Log.debug("_on_delete_requested: No URIs selected. Returning.")
+            logger.debug("_on_delete_requested: No URIs selected. Returning.")
             return
 
         # Ask for confirmation
@@ -449,28 +448,28 @@ class ToolBitBrowserWidget(QtGui.QWidget):
                     library.remove_bit_by_uri(uri_string)
                     if library not in libraries_modified:  # Avoid duplicates
                         libraries_modified.append(library)
-                    Path.Log.info(
+                    logger.info(
                         f"Removed toolbit {toolbit_uri.asset_id} from library {library.label}"
                     )
 
                 # Then delete the toolbit file from disk
                 self._asset_manager.delete(toolbit_uri)
                 deleted_count += 1
-                Path.Log.info(f"Deleted toolbit file {uri_string}")
+                logger.info(f"Deleted toolbit file {uri_string}")
 
             except Exception as e:
-                Path.Log.error(f"Failed to delete toolbit {uri_string}: {e}")
+                logger.error(f"Failed to delete toolbit {uri_string}: {e}")
 
         # Save all modified libraries
         for library in libraries_modified:
             try:
                 self._asset_manager.add(library)
-                Path.Log.info(f"Saved updated library {library.label}")
+                logger.info(f"Saved updated library {library.label}")
             except Exception as e:
-                Path.Log.error(f"Failed to save library {library.label}: {e}")
+                logger.error(f"Failed to save library {library.label}: {e}")
 
         if deleted_count > 0:
-            Path.Log.info(
+            logger.info(
                 f"Deleted {deleted_count} toolbit(s) and updated {len(libraries_modified)} libraries."
             )
             self.refresh()
@@ -493,7 +492,7 @@ class ToolBitBrowserWidget(QtGui.QWidget):
                             break
 
         except Exception as e:
-            Path.Log.error(f"Error finding libraries containing toolbit {toolbit_uri}: {e}")
+            logger.error(f"Error finding libraries containing toolbit {toolbit_uri}: {e}")
 
         return libraries_with_toolbit
 

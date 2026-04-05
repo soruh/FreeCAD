@@ -31,11 +31,7 @@ import Path.Log
 import os
 import tempfile
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class ImageBuilder:
@@ -58,20 +54,20 @@ class ImageBuilderFactory:
             os.environ.get("WAYLAND_DISPLAY")
             or os.environ.get("XDG_SESSION_TYPE", "").lower() == "wayland"
         ):
-            Path.Log.warning(
+            logger.warning(
                 "Wayland session detected: skipping GUI image generation to avoid segfaults"
             )
             return DummyImageBuilder(file_path)
         try:
             return GuiImageBuilder(file_path, **kwargs)
         except Exception as e:
-            Path.Log.warning(f"GuiImageBuilder init failed: {e}, falling back to DummyImageBuilder")
+            logger.warning(f"GuiImageBuilder init failed: {e}, falling back to DummyImageBuilder")
             return DummyImageBuilder(file_path)
 
 
 class DummyImageBuilder(ImageBuilder):
     def __init__(self, file_path):
-        Path.Log.debug("Initializing dummyimagebuilder")
+        logger.debug("Initializing dummyimagebuilder")
         super().__init__(file_path)
 
     def build_image(self, obj, imageName, as_bytes=False, view="default"):
@@ -88,20 +84,20 @@ class GuiImageBuilder(ImageBuilder):
     def __init__(self, file_path):
         super().__init__(file_path)
 
-        Path.Log.debug("Initializing GuiImageBuilder")
+        logger.debug("Initializing GuiImageBuilder")
         self.file_path = file_path
         self.currentCamera = FreeCADGui.ActiveDocument.ActiveView.getCameraType()
 
         self.doc = FreeCADGui.ActiveDocument
 
     def __del__(self):
-        Path.Log.debug("Destroying GuiImageBuilder")
+        logger.debug("Destroying GuiImageBuilder")
         if hasattr(self, "visible"):
             self.restore_visibility()
 
     def prepare_view(self, obj, view="default"):
         # Create a new view
-        Path.Log.debug("CAM - Preparing view\n")
+        logger.debug("CAM - Preparing view\n")
 
         mw = FreeCADGui.getMainWindow()
         num_windows = len(mw.getWindows())
@@ -149,13 +145,13 @@ class GuiImageBuilder(ImageBuilder):
             o.Visibility = False
 
     def destroy_view(self, idx):
-        Path.Log.debug("CAM - destroying view\n")
+        logger.debug("CAM - destroying view\n")
         mw = FreeCADGui.getMainWindow()
         windows = mw.getWindows()
         mw.removeWindow(windows[idx])
 
     def restore_visibility(self):
-        Path.Log.debug("CAM - Restoring visibility\n")
+        logger.debug("CAM - Restoring visibility\n")
         for o in self.visible:
             o.Visibility = True
 
@@ -164,7 +160,7 @@ class GuiImageBuilder(ImageBuilder):
         Makes an image of the target object. Returns either the image as bytes or a filename.
         On failure, logs a warning and returns b"" (as_bytes) or "" (file path).
         """
-        Path.Log.debug("CAM - Building image\n")
+        logger.debug("CAM - Building image\n")
         idx = None
         try:
             idx = self.prepare_view(obj, view=view)
@@ -177,10 +173,10 @@ class GuiImageBuilder(ImageBuilder):
                 self.capture_image(file_path)
                 self.destroy_view(idx)
                 result = f"{file_path}_t.png"
-                Path.Log.debug(f"Image saved to: {result}")
+                logger.debug(f"Image saved to: {result}")
                 return result
         except Exception as e:
-            Path.Log.warning(f"Image capture failed for {image_name}: {e}")
+            logger.warning(f"Image capture failed for {image_name}: {e}")
             if idx is not None:
                 try:
                     self.destroy_view(idx)
@@ -195,7 +191,7 @@ class GuiImageBuilder(ImageBuilder):
 
     def capture_image(self, file_path):
         FreeCADGui.updateGui()
-        Path.Log.debug("CAM - capture image to file\n")
+        logger.debug("CAM - capture image to file\n")
         a_view = FreeCADGui.activeDocument().activeView()
         # Generate higher resolution images - 800x800 pixels for better quality on high-DPI displays
         a_view.saveImage(file_path + ".png", 800, 800, "Current")
@@ -205,7 +201,7 @@ class GuiImageBuilder(ImageBuilder):
     def capture_image_to_bytes(self):
         """Capture the current view directly to bytes without writing to disk"""
         FreeCADGui.updateGui()
-        Path.Log.debug("CAM - capture image to bytes\n")
+        logger.debug("CAM - capture image to bytes\n")
         a_view = FreeCADGui.activeDocument().activeView()
 
         try:
@@ -225,7 +221,7 @@ class GuiImageBuilder(ImageBuilder):
 
         except Exception as e:
             # Fallback to temporary file approach if the direct method fails
-            Path.Log.debug(f"Direct image capture failed: {e}, using fallback method")
+            logger.debug(f"Direct image capture failed: {e}, using fallback method")
 
             with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp:
                 temp_path = temp.name
@@ -252,7 +248,7 @@ class GuiImageBuilder(ImageBuilder):
 class NonGuiImageBuilder(ImageBuilder):
     def __init__(self, file_path):
         super().__init__(file_path)
-        Path.Log.debug("nonguiimagebuilder")
+        logger.debug("nonguiimagebuilder")
 
     def build_image(self, obj, image_name, as_bytes=False, view="default"):
         """
@@ -267,7 +263,7 @@ class NonGuiImageBuilder(ImageBuilder):
         """
         # Ensure the 'Part' and 'coin' modules are available, along with necessary attributes/methods.
         if not hasattr(obj, "Shape") or not hasattr(obj.Shape, "writeInventor"):
-            Path.Log.debug("Object does not have the required attributes.")
+            logger.debug("Object does not have the required attributes.")
             return False
 
         try:
@@ -280,7 +276,7 @@ class NonGuiImageBuilder(ImageBuilder):
             data = coin.SoDB.readAll(inp)
 
             if data is None:
-                Path.Log.debug("Failed to read Inventor data.")
+                logger.debug("Failed to read Inventor data.")
                 return False
 
             # Setup the scene
@@ -316,7 +312,7 @@ class NonGuiImageBuilder(ImageBuilder):
                     off.writeToFile(file_path, "PNG")
                     return file_path
                 else:
-                    Path.Log.debug("PNG format is not supported.")
+                    logger.debug("PNG format is not supported.")
                     return False
 
         except Exception as e:

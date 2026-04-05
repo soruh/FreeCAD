@@ -30,11 +30,7 @@ __author__ = "sliptonic (Brad Collette)"
 __url__ = "https://www.freecad.org"
 __doc__ = "CAM thread milling operation."
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 translate = FreeCAD.Qt.translate
 
@@ -176,12 +172,12 @@ def generate(center, cmd, zStart, zFinal, pitch, radius, leadInOut, elevator, st
     a = math.atan2(y - center.y, x - center.x)
     dx = math.cos(a) * (radius - elevator)
     dy = math.sin(a) * (radius - elevator)
-    Path.Log.debug("")
-    Path.Log.debug("a={}: dx={:.2f}, dy={:.2f}".format(a / math.pi * 180, dx, dy))
+    logger.debug("")
+    logger.debug("a={}: dx={:.2f}, dy={:.2f}".format(a / math.pi * 180, dx, dy))
 
     elevatorX = x - dx
     elevatorY = y - dy
-    Path.Log.debug("({:.2f}, {:.2f}) -> ({:.2f}, {:.2f})".format(x, y, elevatorX, elevatorY))
+    logger.debug("({:.2f}, {:.2f}) -> ({:.2f}, {:.2f})".format(x, y, elevatorX, elevatorY))
 
     if leadInOut:
         _comment(path, "lead-out")

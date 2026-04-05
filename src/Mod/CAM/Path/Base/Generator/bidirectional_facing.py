@@ -46,11 +46,7 @@ import Path
 from . import facing_common
 import math
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 def bidirectional(
@@ -102,7 +98,7 @@ def bidirectional(
             step_positions.insert(0, step_positions[0] - stepover_distance)
             added = True
         if added:
-            Path.Log.info(
+            logger.info(
                 "Bidirectional facing: Added extra pass(es) for full coverage at ≥100% stepover"
             )
 
@@ -127,7 +123,7 @@ def bidirectional(
             if i < len(top_positions):
                 all_passes.append(("top", top_positions[i]))
 
-    Path.Log.debug(
+    logger.debug(
         f"Bidirectional: {len(all_passes)} passes ({len(bottom_positions)} bottom, {len(top_positions)} top)"
     )
 

@@ -41,11 +41,7 @@ from ..doc import (
 )
 from .icon import ToolBitShapeIcon
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.ERROR, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.ERROR, False)
 
 
 class ToolBitShape(Asset):
@@ -164,7 +160,7 @@ class ToolBitShape(Asset):
             return shape_class
 
         # If that also fails, try to load the shape to get the class.
-        Path.Log.debug(
+        logger.debug(
             f'Failed to infer shape type from "{shape_id}", trying to load'
             f' the shape "{shape_id}" to determine the class. This may'
             " negatively impact performance."
@@ -185,7 +181,7 @@ class ToolBitShape(Asset):
         # Otherwise use the default, if we have one.
         shape_types = [c.name for c in ToolBitShape.__subclasses__()]
         if default is not None:
-            Path.Log.debug(
+            logger.debug(
                 f'Failed to infer shape type from {shape_id}, using "{default.name}".'
                 f" To fix, name the body in the shape file to one of: {shape_types}"
             )
@@ -281,7 +277,7 @@ class ToolBitShape(Asset):
         For ToolBitShape, this is the associated ToolBitShapeIcon, identified
         by the same ID as the shape asset.
         """
-        Path.Log.debug(f"ToolBitShape.extract_dependencies called for {cls.__name__}")
+        logger.debug(f"ToolBitShape.extract_dependencies called for {cls.__name__}")
         assert (
             serializer == DummyAssetSerializer
         ), f"ToolBitShape supports only native import, not {serializer}"
@@ -311,7 +307,7 @@ class ToolBitShape(Asset):
         except Exception as e:
             # If we can't extract the shape ID or something goes wrong,
             # assume no dependencies for now.
-            Path.Log.error(f"Failed to extract dependencies from shape data: {e}")
+            logger.error(f"Failed to extract dependencies from shape data: {e}")
             return []
 
     @classmethod
@@ -344,7 +340,7 @@ class ToolBitShape(Asset):
             Exception: For other potential FreeCAD errors during loading.
         """
         assert serializer == DummyAssetSerializer, "ToolBitShape supports only native import"
-        Path.Log.debug(f"{id}: ToolBitShape.from_bytes called with {len(data)} bytes")
+        logger.debug(f"{id}: ToolBitShape.from_bytes called with {len(data)} bytes")
 
         # Open the shape data temporarily to get the Body label and parameters
         with ShapeDocFromBytes(data) as temp_doc:
@@ -357,7 +353,7 @@ class ToolBitShape(Asset):
             try:
                 shape_class = ToolBitShape.get_shape_class_from_bytes(data)
             except Exception as e:
-                Path.Log.debug(f"{id}: Failed to determine shape class from bytes: {e}")
+                logger.debug(f"{id}: Failed to determine shape class from bytes: {e}")
                 shape_class = ToolBitShape.get_shape_class_from_id("Custom")
             if shape_class is None:
                 # This should ideally not happen due to get_shape_class_from_bytes fallback
@@ -391,7 +387,7 @@ class ToolBitShape(Asset):
                 if name not in loaded_params or loaded_params[name] is None
             ]
             if missing_params:
-                Path.Log.error(
+                logger.error(
                     f"Validation error: Object '{props_obj.Label}' in document {id} "
                     f"is missing parameters for {shape_class.__name__}: {', '.join(missing_params)}."
                     f" In future releases, these shapes will not load!"
@@ -406,7 +402,7 @@ class ToolBitShape(Asset):
             instance._data = data  # Keep the byte content
             instance._defaults = loaded_params
             instance._param_types = loaded_param_types
-            Path.Log.debug(f"Params: {instance._params} {instance._defaults}")
+            logger.debug(f"Params: {instance._params} {instance._defaults}")
             instance._params = instance._defaults | instance._params
 
             if dependencies:  # dependencies is None = shallow load
@@ -482,7 +478,7 @@ class ToolBitShape(Asset):
         """
         if not filepath.exists():
             raise FileNotFoundError(f"Shape file not found: {filepath}")
-        Path.Log.debug(f"{id}: ToolBitShape.from_file called with {filepath}")
+        logger.debug(f"{id}: ToolBitShape.from_file called with {filepath}")
 
         try:
             data = filepath.read_bytes()
@@ -688,7 +684,7 @@ class ToolBitShape(Asset):
             try:
                 self.set_parameter(name, value)
             except KeyError:
-                Path.Log.debug(f"Ignoring unknown parameter '{name}' for shape '{self.name}'.\n")
+                logger.debug(f"Ignoring unknown parameter '{name}' for shape '{self.name}'.\n")
 
     @classmethod
     def get_expected_shape_parameters(cls) -> List[str]:

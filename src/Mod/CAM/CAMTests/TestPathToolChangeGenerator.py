@@ -25,8 +25,7 @@ import Path
 import Path.Base.Generator.toolchange as generator
 import CAMTests.PathTestUtils as PathTestUtils
 
-Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-Path.Log.trackModule(Path.Log.thisModule())
+logger = Path.Log.getModuleLogger(withLevel=Path.Log.Level.DEBUG, enableTracking=True)
 
 
 class TestPathToolChangeGenerator(PathTestUtils.PathTestBase):
@@ -65,7 +64,7 @@ class TestPathToolChangeGenerator(PathTestUtils.PathTestBase):
         args["spindlespeed"] = 0
         results = generator.generate(**args)
         self.assertTrue(len(results) == 2)
-        Path.Log.track(results)
+        logger.track(results)
 
         # negative spindlespeed
         args["spindlespeed"] = -10

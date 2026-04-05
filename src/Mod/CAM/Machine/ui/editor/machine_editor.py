@@ -43,11 +43,8 @@ import re
 translate = FreeCAD.Qt.translate
 
 debug = False
-if debug:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, debug)
 
 
 class DataclassGUIGenerator:
@@ -801,12 +798,10 @@ class MachineEditorDialog(QtGui.QDialog):
             toolhead_count = len(self.machine.toolheads)
             should_enable = toolhead_count < 9
             self.add_toolhead_button.setEnabled(should_enable)
-            Path.Log.debug(
-                f"Toolhead button state: count={toolhead_count}, enabled={should_enable}"
-            )
+            logger.debug(f"Toolhead button state: count={toolhead_count}, enabled={should_enable}")
         else:
             self.add_toolhead_button.setEnabled(True)
-            Path.Log.debug("Toolhead button state: no machine, enabled=True")
+            logger.debug("Toolhead button state: no machine, enabled=True")
 
     def _on_manufacturer_changed(self, text):
         """Update manufacturer when text changes."""
@@ -859,7 +854,7 @@ class MachineEditorDialog(QtGui.QDialog):
                 self.machine = MachineFactory.load_configuration(template_path)
                 self.machine.name = "New Machine"
             except Exception as e:
-                Path.Log.error(f"Failed to load template: {e}")
+                logger.error(f"Failed to load template: {e}")
                 QtGui.QMessageBox.warning(
                     self,
                     translate("CAM_MachineEditor", "Template Load Error"),
@@ -1631,7 +1626,7 @@ class MachineEditorDialog(QtGui.QDialog):
         Updates Machine.toolheads directly.
         """
         initial_count = len(self.machine.toolheads) if self.machine else 0
-        Path.Log.debug(f"update_toolheads() called with {initial_count} existing toolheads")
+        logger.debug(f"update_toolheads() called with {initial_count} existing toolheads")
 
         # Clear existing toolhead tabs - this properly disconnects signals
         while self.toolheads_tabs.count() > 0:
@@ -1643,15 +1638,15 @@ class MachineEditorDialog(QtGui.QDialog):
 
         self.toolhead_edits = []
         count = len(self.machine.toolheads) if self.machine else 1
-        Path.Log.debug(f"Target toolhead count: {count}")
+        logger.debug(f"Target toolhead count: {count}")
 
         # Ensure machine has at least 1 toolhead
         if self.machine:
             # Always ensure at least 1 toolhead, even if current count is 0
             target_count = max(count, 1)
-            Path.Log.debug(f"Target count after max(count, 1): {target_count}")
+            logger.debug(f"Target count after max(count, 1): {target_count}")
             while len(self.machine.toolheads) < target_count:
-                Path.Log.debug(f"Adding toolhead, current count: {len(self.machine.toolheads)}")
+                logger.debug(f"Adding toolhead, current count: {len(self.machine.toolheads)}")
                 self.machine.toolheads.append(
                     Toolhead(
                         name=f"Toolhead {len(self.machine.toolheads) + 1}",
@@ -1666,7 +1661,7 @@ class MachineEditorDialog(QtGui.QDialog):
             while len(self.machine.toolheads) > count:
                 self.machine.toolheads.pop()
 
-            Path.Log.debug(f"After toolhead adjustment, count: {len(self.machine.toolheads)}")
+            logger.debug(f"After toolhead adjustment, count: {len(self.machine.toolheads)}")
 
         for i in range(max(count, 1)):
             tab = QtGui.QWidget()
@@ -1907,7 +1902,7 @@ class MachineEditorDialog(QtGui.QDialog):
         # Update button state
         self._update_toolhead_button_state()
         final_count = len(self.machine.toolheads) if self.machine else 0
-        Path.Log.debug(f"update_toolheads() completed with {final_count} toolheads")
+        logger.debug(f"update_toolheads() completed with {final_count} toolheads")
 
     def setup_output_tab(self):
         """Set up the output options configuration tab."""
@@ -2048,7 +2043,7 @@ class MachineEditorDialog(QtGui.QDialog):
         if self.post_processor_combo.findText("generic") < 0:
             self.post_processor_combo.addItem("generic")
 
-        Path.Log.info(
+        logger.info(
             f"Machine Editor: Showing {self.post_processor_combo.count()} machine postprocessors"
         )
 
@@ -2182,7 +2177,7 @@ class MachineEditorDialog(QtGui.QDialog):
             if current_value != value:
                 setattr(obj, final_field, value)
         except Exception as e:
-            Path.Log.error(f"Error updating {field_path}: {e}")
+            logger.error(f"Error updating {field_path}: {e}")
 
     def _populate_post_widgets_from_machine(self, machine: Machine):
         """Populate dynamically generated post-processor widgets from machine object.
@@ -2368,7 +2363,7 @@ class MachineEditorDialog(QtGui.QDialog):
             self.post_properties_group.setVisible(True)
 
         except Exception as e:
-            Path.Log.warning(f"Failed to load postprocessor properties for {post_name}: {e}")
+            logger.warning(f"Failed to load postprocessor properties for {post_name}: {e}")
             self.post_properties_group.setVisible(False)
 
     def populate_kinematics_fields(self):

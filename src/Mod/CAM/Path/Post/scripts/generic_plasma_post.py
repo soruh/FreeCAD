@@ -36,13 +36,9 @@ import FreeCAD
 translate = FreeCAD.Qt.translate
 
 DEBUG = False
-if DEBUG:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, DEBUG)
 
-Path.Log.debug("generic_plasma_post.py module loaded")
+logger.debug("generic_plasma_post.py module loaded")
 
 # Define some types that are used throughout this file.
 Values = Dict[str, Any]
@@ -63,7 +59,7 @@ class GenericPlasma(PostProcessor):
 
     @classmethod
     def get_common_property_schema(cls):
-        Path.Log.debug("GenericPlasma.get_common_property_schema() called")
+        logger.debug("GenericPlasma.get_common_property_schema() called")
         common_props = copy.deepcopy(super().get_common_property_schema())
 
         # Override defaults for GenericPlasma
@@ -171,7 +167,7 @@ class GenericPlasma(PostProcessor):
             tooltipargs=tooltipargs,
             units=units,
         )
-        Path.Log.debug("Generic Plasma post processor initialized.")
+        logger.debug("Generic Plasma post processor initialized.")
 
         # Torch commands
         self.TorchIgniteCommand = Path.Command("M3")
@@ -187,7 +183,7 @@ class GenericPlasma(PostProcessor):
         clearance_height = self._get_operation_height(item, "ClearanceHeight", 0)
 
         if self._torch_active is not False:
-            Path.Log.debug("Resetting torch to inactive")
+            logger.debug("Resetting torch to inactive")
             self._torch_active = False
             reset_commands.append(self.TorchExtinguishCommand)
 
@@ -196,7 +192,7 @@ class GenericPlasma(PostProcessor):
             and CompValue(clearance_height) != 0
             and CompValue(self._last_z) != CompValue(clearance_height)
         ):
-            Path.Log.debug("Resetting torch to clearence height")
+            logger.debug("Resetting torch to clearence height")
             self._last_z = clearance_height
             move_cmd = Path.Command("G0", {"Z": clearance_height})
             reset_commands.append(move_cmd)
@@ -384,7 +380,7 @@ class GenericPlasma(PostProcessor):
                     if value is not None:
                         return float(value)
         except (AttributeError, TypeError, ValueError) as e:
-            Path.Log.debug(f"GenericPlasma: Could not get {height_type}: {e}")
+            logger.debug(f"GenericPlasma: Could not get {height_type}: {e}")
         return default
 
     def _inject_mark_entry_only(self, postables):
@@ -493,7 +489,7 @@ class GenericPlasma(PostProcessor):
         and Stage 2 (command expansion), ensuring transformations are applied to
         the actual postables that get converted to G-code.
         """
-        Path.Log.debug("GenericPlasma: Applying plasma-specific transformations")
+        logger.debug("GenericPlasma: Applying plasma-specific transformations")
         self._inject_mark_entry_only(postables)
         self._inject_torch_control(postables)
         self._inject_pierce_delay(postables)
@@ -502,11 +498,11 @@ class GenericPlasma(PostProcessor):
 
     def get_sanity_checks(self, job):
         """Plasma cutter specific sanity checks."""
-        Path.Log.track("GenericPlasma.get_sanity_checks() called")
+        logger.track("GenericPlasma.get_sanity_checks() called")
         squawks = []
 
         # Test squawk.  Remove this.  It will always add a warning.
-        Path.Log.track("Adding test squawk from GenericPlasma")
+        logger.track("Adding test squawk from GenericPlasma")
         squawks.append(self._create_squawk("WARNING", "This is a test warning message"))
 
         # Check pierce delay vs material thickness
@@ -565,7 +561,7 @@ class GenericPlasma(PostProcessor):
                 )
             )
 
-        Path.Log.track(f"GenericPlasma.get_sanity_checks() returning {len(squawks)} squawks")
+        logger.track(f"GenericPlasma.get_sanity_checks() returning {len(squawks)} squawks")
         return squawks
 
     @property

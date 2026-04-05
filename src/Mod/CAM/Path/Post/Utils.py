@@ -42,11 +42,7 @@ import re
 translate = FreeCAD.Qt.translate
 
 debug = False
-if debug:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, debug)
 
 translate = FreeCAD.Qt.translate
 
@@ -110,7 +106,7 @@ class FilenameGenerator:
 
         # Check for invalid matches
         for match in re.findall(r"%(.)", outputpath):
-            Path.Log.debug(f"match: {match}")
+            logger.debug(f"match: {match}")
             if match not in validPathSubstitutions:
                 outputpath = outputpath.replace(f"%{match}", "")
                 FreeCAD.Console.PrintWarning(
@@ -118,14 +114,14 @@ class FilenameGenerator:
                 )
 
         for match in re.findall(r"%(.)", filename):
-            Path.Log.debug(f"match: {match}")
+            logger.debug(f"match: {match}")
             if match not in validFilenameSubstitutions:
                 filename = filename.replace(f"%{match}", "")
                 FreeCAD.Console.PrintWarning(
                     "Invalid substitution strings will be ignored in file path: %s\n" % match
                 )
 
-        Path.Log.debug(f"outputpath: {outputpath} filename: {filename} ext: {ext}")
+        logger.debug(f"outputpath: {outputpath} filename: {filename} ext: {ext}")
         return outputpath, filename, ext
 
     def set_subpartname(self, subpartname):
@@ -142,11 +138,11 @@ class FilenameGenerator:
         for key, value in substitutions.items():
             file_path = file_path.replace(key, value)
 
-        Path.Log.debug(f"file_path: {file_path}")
+        logger.debug(f"file_path: {file_path}")
         return file_path
 
     def _apply_filename_substitutions(self, file_name):
-        Path.Log.debug(f"file_name: {file_name}")
+        logger.debug(f"file_name: {file_name}")
         """Apply substitutions based on job settings and other parameters."""
         substitutions = {
             "%d": self.job.Document.Label,
@@ -159,18 +155,18 @@ class FilenameGenerator:
         for key, value in substitutions.items():
             file_name = file_name.replace(key, value)
 
-        Path.Log.debug(f"file_name: {file_name}")
+        logger.debug(f"file_name: {file_name}")
         return file_name
 
     def generate_filenames(self):
         """Yield filenames indefinitely with proper substitutions."""
         while True:
             temp_filename = self.qualified_filename
-            Path.Log.debug(f"temp_filename: {temp_filename}")
+            logger.debug(f"temp_filename: {temp_filename}")
             explicit_sequence = False
             matches = re.findall(r"%S", temp_filename)
             if matches:
-                Path.Log.debug(f"matches: {matches}")
+                logger.debug(f"matches: {matches}")
                 temp_filename = re.sub(r"%S", str(self.sequencenumber), temp_filename)
                 explicit_sequence = True
 
@@ -186,7 +182,7 @@ class FilenameGenerator:
             full_path = os.path.join(self.qualified_path, filename)
 
             self.sequencenumber += 1
-            Path.Log.debug(f"yielding filename: {full_path}")
+            logger.debug(f"yielding filename: {full_path}")
             yield os.path.normpath(full_path)
 
 

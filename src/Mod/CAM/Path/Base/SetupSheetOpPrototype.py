@@ -28,8 +28,7 @@ __url__ = "https://www.freecad.org"
 __doc__ = "Prototype objects to allow extraction of setup sheet values and editing."
 
 
-Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
-# Path.Log.trackModule(Path.Log.thisModule())
+logger = Path.Log.getModuleLogger(withLevel=Path.Log.Level.INFO, enableTracking=None)
 
 
 class Property(object):
@@ -65,11 +64,11 @@ class Property(object):
     def setupProperty(self, obj, name, category, value):
         created = False
         if not hasattr(obj, name):
-            Path.Log.track("add", obj.Name, name, self.propType)
+            logger.track("add", obj.Name, name, self.propType)
             obj.addProperty(self.propType, name, category, self.info)
             self.initProperty(obj, name)
             created = True
-        Path.Log.track("set", obj.Name, name, value, type(value))
+        logger.track("set", obj.Name, name, value, type(value))
         setattr(obj, name, value)
         return created
 
@@ -130,7 +129,7 @@ class PropertyFloat(Property):
         try:
             return float(string)
         except ValueError:
-            Path.Log.error(f"{self.category}.{self.name} [{self.propType}] : '{string}'")
+            logger.error(f"{self.category}.{self.name} [{self.propType}] : '{string}'")
             raise
 
 
@@ -142,7 +141,7 @@ class PropertyInteger(Property):
         try:
             return int(string)
         except ValueError:
-            Path.Log.error(f"{self.category}.{self.name} [{self.propType}] : '{string}'")
+            logger.error(f"{self.category}.{self.name} [{self.propType}] : '{string}'")
             raise
 
 
@@ -159,7 +158,7 @@ class PropertyBool(Property):
         try:
             return bool(string)
         except ValueError:
-            Path.Log.error(f"{self.category}.{self.name} [{self.propType}] : '{string}'")
+            logger.error(f"{self.category}.{self.name} [{self.propType}] : '{string}'")
             raise
 
 

@@ -35,11 +35,7 @@ __url__ = "https://www.freecad.org"
 __doc__ = "CAM Custom object and FreeCAD command"
 
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 translate = FreeCAD.Qt.translate
@@ -72,11 +68,11 @@ class ObjectCustom(PathOp.ObjectOp):
         data = list()
         idx = 0 if dataType == "translated" else 1
 
-        Path.Log.debug(enums)
+        logger.debug(enums)
 
         for k, v in enumerate(enums):
             data.append((v, [tup[idx] for tup in enums[v]]))
-        Path.Log.debug(data)
+        logger.debug(data)
 
         return data
 
@@ -182,7 +178,7 @@ class ObjectCustom(PathOp.ObjectOp):
                     if len(errorLines) < 7:
                         errorLines.append(f"{counter}: {str(l).strip()}")
             if errorLines:
-                Path.Log.warning(
+                logger.warning(
                     translate("PathCustom", "Total invalid lines in Custom Text G-code: %s")
                     % len(errorNumLines)
                 )
@@ -192,7 +188,7 @@ class ObjectCustom(PathOp.ObjectOp):
 
             # could not determine the path
             if not gcode_file:
-                Path.Log.error(
+                logger.error(
                     translate("PathCustom", "Custom file %s could not be found.") % obj.GcodeFile
                 )
             else:
@@ -207,21 +203,21 @@ class ObjectCustom(PathOp.ObjectOp):
                             if len(errorLines) < 7:
                                 errorLines.append(f"{counter}: {str(l).strip()}")
                 if errorLines:
-                    Path.Log.warning(f'"{gcode_file}"')
-                    Path.Log.warning(
+                    logger.warning(f'"{gcode_file}"')
+                    logger.warning(
                         translate("PathCustom", "Total invalid lines in Custom File G-code: %s")
                         % len(errorNumLines)
                     )
 
         if errorNumLines:
-            Path.Log.warning(
+            logger.warning(
                 translate("PathCustom", "Please check lines: %s")
                 % ", ".join(map(str, errorNumLines))
             )
 
             if len(errorLines) > 7:
                 errorLines.append("...")
-            Path.Log.warning("\n" + "\n".join(errorLines))
+            logger.warning("\n" + "\n".join(errorLines))
 
         self.commandlist.append(Path.Command("(End Custom)"))
 

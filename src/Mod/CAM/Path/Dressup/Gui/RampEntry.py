@@ -41,11 +41,7 @@ if FreeCAD.GuiUp:
 translate = FreeCAD.Qt.translate
 
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class AnnotatedGCode:
@@ -241,11 +237,11 @@ class ObjectDressup:
         data = list()
         idx = 0 if dataType == "translated" else 1
 
-        Path.Log.debug(enums)
+        logger.debug(enums)
 
         for k, v in enumerate(enums):
             data.append((v, [tup[idx] for tup in enums[v]]))
-        Path.Log.debug(data)
+        logger.debug(data)
 
         return data
 
@@ -370,7 +366,7 @@ class ObjectDressup:
                     projectionlen = plungelen * math.tan(
                         math.radians(rampangle)
                     )  # length of the forthcoming ramp projected to XY plane
-                    # Path.Log.debug(
+                    # logger.debug(
                     #    "Found plunge move at X:{} Y:{} From Z:{} to Z{}, length of ramp: {}".format(
                     #        p0.x, p0.y, p0.z, p1.z, projectionlen
                     #    )
@@ -391,7 +387,7 @@ class ObjectDressup:
                         ):
                             # this edge is not an edge/arc in the XY plane; not qualified for ramping
                             break
-                        # Path.Log.debug("Next edge length {}".format(candidate.Length))
+                        # logger.debug("Next edge length {}".format(candidate.Length))
                         rampedges.append(candidate)
                         coveredlen = coveredlen + candidate.xy_length
 
@@ -399,12 +395,10 @@ class ObjectDressup:
                             covered = True
                         i = i + 1
                     if len(rampedges) == 0:
-                        Path.Log.warning(
-                            "No suitable edges for ramping, plunge will remain as such"
-                        )
+                        logger.warning("No suitable edges for ramping, plunge will remain as such")
                         outedges.append(edge)
                     else:
-                        # Path.Log.debug("Doing ramp to edges: {}".format(rampedges))
+                        # logger.debug("Doing ramp to edges: {}".format(rampedges))
                         if self.method == "RampMethod1":
                             outedges.extend(
                                 self.createRampMethod1(
@@ -443,7 +437,7 @@ class ObjectDressup:
     def generateHelix(self):
         edges = self.edges
         minZ = self.findMinZ(edges)
-        Path.Log.debug("Minimum Z in this path is {}".format(minZ))
+        logger.debug("Minimum Z in this path is {}".format(minZ))
         outedges = []
         i = 0
         while i < len(edges):
@@ -476,7 +470,7 @@ class ObjectDressup:
                         rampedges.append(candidate)
                         j = j + 1
                     if not loopFound:
-                        Path.Log.warning("No suitable helix found, leaving as a plunge")
+                        logger.warning("No suitable helix found, leaving as a plunge")
                         outedges.append(edge)
                     else:
                         outedges.extend(self.createHelix(rampedges, edge.start_point[2]))
@@ -715,7 +709,7 @@ class ViewProviderDressup:
 
     def onDelete(self, arg1=None, arg2=None):
         """this makes sure that the base operation is added back to the project and visible"""
-        Path.Log.debug("Deleting Dressup")
+        logger.debug("Deleting Dressup")
         if arg1.Object and arg1.Object.Base:
             FreeCADGui.ActiveDocument.getObject(arg1.Object.Base.Name).Visibility = True
             job = PathUtils.findParentJob(self.obj)
@@ -780,4 +774,4 @@ if FreeCAD.GuiUp:
     # register the FreeCAD command
     FreeCADGui.addCommand("CAM_DressupRampEntry", CommandPathDressupRampEntry())
 
-Path.Log.notice("Loading CAM_DressupRampEntry… done\n")
+logger.notice("Loading CAM_DressupRampEntry… done\n")

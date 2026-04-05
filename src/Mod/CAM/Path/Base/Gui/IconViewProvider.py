@@ -32,11 +32,7 @@ __doc__ = "ViewProvider who's main and only task is to assign an icon."
 
 translate = FreeCAD.Qt.translate
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 class ViewProvider(object):
@@ -94,7 +90,7 @@ class ViewProvider(object):
             self._onEditCallback(False)
 
     def setupContextMenu(self, vobj, menu):
-        Path.Log.track()
+        logger.track()
         from PySide import QtGui
 
         edit = translate("Path", "Edit")
@@ -113,12 +109,12 @@ def Attach(vobj, name):
     """Attach(vobj, name) ... attach the appropriate view provider to the view object.
     If no view provider was registered for the given name a default IconViewProvider is created."""
 
-    Path.Log.track(vobj.Object.Label, name)
+    logger.track(vobj.Object.Label, name)
     global _factory
     for key, value in _factory.items():
         if key == name:
             return value(vobj, name)
-    Path.Log.track(vobj.Object.Label, name, "PathIconViewProvider")
+    logger.track(vobj.Object.Label, name, "PathIconViewProvider")
     return ViewProvider(vobj, name)
 
 
@@ -126,6 +122,6 @@ def RegisterViewProvider(name, provider):
     """RegisterViewProvider(name, provider) ... if an IconViewProvider is created for an object with the given name
     an instance of provider is used instead."""
 
-    Path.Log.track(name)
+    logger.track(name)
     global _factory
     _factory[name] = provider

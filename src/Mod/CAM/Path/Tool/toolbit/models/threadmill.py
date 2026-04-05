@@ -34,7 +34,7 @@ class ToolBitThreadMill(ToolBit, CuttingToolMixin, RotaryToolBitMixin):
     def __init__(
         self, shape: ToolBitShapeThreadMill, id: str | None = None, attrs: Optional[Mapping] = None
     ):
-        Path.Log.track(f"ToolBitThreadmill __init__ called with shape: {shape}, id: {id}")
+        logger.track(f"ToolBitThreadmill __init__ called with shape: {shape}, id: {id}")
         super().__init__(shape, id=id, attrs=attrs)
         self._init_cutting_properties(self.obj)
 

@@ -272,7 +272,7 @@ class ObjectArray:
             cms.append(PathUtil.coolantModeForOp(sel))
 
         if tcs == {None} or len(set(tcs)) > 1:
-            Path.Log.warning(
+            logger.warning(
                 translate(
                     "PathArray",
                     "Arrays of toolpaths having different tool controllers or tool controller not selected.",
@@ -281,7 +281,7 @@ class ObjectArray:
             return False
 
         if set(cms) != {"None"}:
-            Path.Log.warning(
+            logger.warning(
                 translate(
                     "PathArray",
                     "Arrays not compatible with coolant modes.",

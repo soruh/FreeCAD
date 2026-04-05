@@ -39,11 +39,7 @@ import FreeCAD
 import Path
 from . import facing_common
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 def directional(
@@ -77,7 +73,7 @@ def directional(
     min_t, max_t = facing_common.project_bounds(polygon, step_vec, origin)
 
     if not all(math.isfinite(x) for x in [min_s, max_s, min_t, max_t]):
-        Path.Log.error("Directional: non-finite projection bounds; aborting")
+        logger.error("Directional: non-finite projection bounds; aborting")
         return []
 
     step_positions = facing_common.generate_t_values(
@@ -99,14 +95,14 @@ def directional(
             step_positions.insert(0, step_positions[0] - stepover_distance)
             added = True
         if added:
-            Path.Log.info("Directional: Added extra pass(es) for full coverage at high stepover")
+            logger.info("Directional: Added extra pass(es) for full coverage at high stepover")
 
     # Reverse = mirror positions around center (exactly like bidirectional) to preserve engagement offset on the starting side
     if reverse:
         center = (min_t + max_t) / 2.0
         step_positions = [2 * center - t for t in step_positions]
 
-    Path.Log.debug(f"Directional (fixed): {len(step_positions)} passes")
+    logger.debug(f"Directional (fixed): {len(step_positions)} passes")
 
     # Use full-length passes exactly like bidirectional (no slice_wire_segments)
     total_extension = (
@@ -154,7 +150,7 @@ def directional(
         commands.append(Path.Command("G1", {"X": end_point.x, "Y": end_point.y, "Z": z}))
         kept_segments += 1
 
-    Path.Log.debug(f"Directional: generated {kept_segments} segments")
+    logger.debug(f"Directional: generated {kept_segments} segments")
     # Fallback: if nothing kept due to numeric guards, emit a single mid-line pass across bbox
     if kept_segments == 0:
         t_candidates = []

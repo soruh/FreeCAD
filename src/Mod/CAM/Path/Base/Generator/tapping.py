@@ -31,11 +31,7 @@ __doc__ = "Generates the Tapping toolpath for a single spotshape"
 __contributors__ = "luvtofish (Dan Henderson)"
 
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 def generate(
@@ -66,12 +62,12 @@ def generate(
     startPoint = edge.Vertexes[0].Point
     endPoint = edge.Vertexes[1].Point
 
-    Path.Log.debug(startPoint)
-    Path.Log.debug(endPoint)
+    logger.debug(startPoint)
+    logger.debug(endPoint)
 
-    Path.Log.debug(numpy.isclose(startPoint.sub(endPoint).x, 0, rtol=1e-05, atol=1e-06))
-    Path.Log.debug(numpy.isclose(startPoint.sub(endPoint).y, 0, rtol=1e-05, atol=1e-06))
-    Path.Log.debug(endPoint)
+    logger.debug(numpy.isclose(startPoint.sub(endPoint).x, 0, rtol=1e-05, atol=1e-06))
+    logger.debug(numpy.isclose(startPoint.sub(endPoint).y, 0, rtol=1e-05, atol=1e-06))
+    logger.debug(endPoint)
 
     if repeat < 1:
         raise ValueError("repeat must be 1 or greater")

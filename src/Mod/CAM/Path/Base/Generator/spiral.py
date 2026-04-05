@@ -28,11 +28,7 @@ __url__ = "https://www.freecad.org"
 __doc__ = "Generates the spiral toolpath"
 
 
-if False:
-    Path.Log.setLevel(Path.Log.Level.DEBUG, Path.Log.thisModule())
-    Path.Log.trackModule(Path.Log.thisModule())
-else:
-    Path.Log.setLevel(Path.Log.Level.INFO, Path.Log.thisModule())
+logger = Path.Log.getLoggerWithLevelOrDebugLogger(Path.Log.Level.INFO, False)
 
 
 def generate(
@@ -113,7 +109,7 @@ def generate(
     if not isinstance(dir_angle_rad, (float, int)):
         raise TypeError("Invalid value for parameter 'dir_angle_rad'")
 
-    Path.Log.track(
+    logger.track(
         "(spiral: <{}, {}, {}>\n outer radius {}\n inner radius {}\n step {}\n direction {}\n startAt {})".format(
             center.x,
             center.y,

@@ -34,6 +34,8 @@ from .util import (
 import Path
 import Path.Preferences as Preferences
 
+logger = Path.Log.getModuleLogger()
+
 
 class AssetOpenDialog(QFileDialog):
     def __init__(
@@ -68,7 +70,7 @@ class AssetOpenDialog(QFileDialog):
         if not serializer_class:
             message = f"No supported serializer found for file extension '{file_extension}'"
             if quiet:
-                Path.Log.error(message)
+                logger.error(message)
             else:
                 QMessageBox.critical(
                     self,
@@ -109,7 +111,7 @@ class AssetOpenDialog(QFileDialog):
                 if not dependency_found:
                     message = f"Failed to import {file_path}: required dependency {dependency_uri} not found in stores or in parallel Bit directory"
                     if quiet:
-                        Path.Log.error(message)
+                        logger.error(message)
                     else:
                         QMessageBox.critical(
                             self,
@@ -122,7 +124,7 @@ class AssetOpenDialog(QFileDialog):
             if external_toolbits:
                 toolbit_names = [uri.asset_id for uri, _ in external_toolbits]
                 if quiet:
-                    Path.Log.info("Importing tool bits for the library")
+                    logger.info("Importing tool bits for the library")
                     reply = QMessageBox.Yes
                 else:
                     reply = QMessageBox.question(
@@ -240,7 +242,7 @@ class AssetOpenDialog(QFileDialog):
                     failed_imports
                 )
             if quiet:
-                Path.Log.info(message)
+                logger.info(message)
             else:
                 QMessageBox.information(self, "Import Results", message)
         elif failed_imports:
@@ -248,7 +250,7 @@ class AssetOpenDialog(QFileDialog):
                 failed_imports
             )
             if quiet:
-                Path.Log.error(message)
+                logger.error(message)
             else:
                 QMessageBox.warning(self, "Import Failed", message)
 
