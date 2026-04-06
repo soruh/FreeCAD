@@ -118,9 +118,11 @@ class ModuleLogger:
 
     def debug(self, message):
         """(message)"""
-        if self.willLogAt(Level.DEBUG):
-            module, line, func = _caller()
-            return self._log(Level.DEBUG, "({}) - {}".format(line, message))
+        if not self.willLogAt(Level.DEBUG):
+            return None
+
+        module, line, func = _caller()
+        return self._log(Level.DEBUG, "({}) - {}".format(line, message))
 
     def info(self, message):
         """(message)"""
