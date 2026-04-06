@@ -720,12 +720,18 @@ class PathData:
         shortest = None
         longest = None
 
-        for edge in self.bottomEdges:
-            if not longest or edge.Length > longest.Length:
-                longest = edge
+        lengthOfShortest = None
+        lengthOfLongest = None
 
-            if not shortest or edge.Length < shortest.Length:
+        for edge in self.bottomEdges:
+            edgeLength = edge.Length
+            if not longest or edgeLength > lengthOfLongest:
+                longest = edge
+                lengthOfLongest = edgeLength
+
+            if not shortest or edgeLength < lengthOfShortest:
                 shortest = edge
+                lengthOfShortest = edgeLength
 
         return (shortest, longest)
 
