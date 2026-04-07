@@ -231,6 +231,9 @@ class Tag:
     def nextIntersectionClosestTo(self, edge, solid, refPt):
         # debugEdge(edge, 'intersects_')
 
+        if not edge.BoundBox.intersect(solid.BoundBox):
+            return None
+
         vertexes = edge.common(solid).Vertexes
         if vertexes:
             pt = sorted(vertexes, key=lambda v: (v.Point - refPt).Length)[0].Point
@@ -1211,7 +1214,7 @@ class ObjectTagDressup:
         for i, tag in enumerate(self.pathData.sortedTags(rawTags)):
             if tag.enabled:
                 if prev:
-                    if prev.solid.common(tag.solid).Faces:
+                    if prev.solid.BoundBox.intersect(tag.solid.BoundBox) and prev.solid.common(tag.solid).Faces:
                         logger.info("Tag #%d intersects with previous tag - disabling\n" % i)
                         logger.debug("this tag = %d [%s]" % (i, tag.solid.BoundBox))
                         tag.enabled = False
