@@ -295,7 +295,9 @@ class TopoShape(ComplexGeoData):
         ...
 
     @constmethod
-    def intersects(self, tools: Union[TopoShape, Tuple[TopoShape, ...]], tolerance: float = 0.0, /) -> bool:
+    def intersects(
+        self, tools: Union[TopoShape, Tuple[TopoShape, ...]], tolerance: float = 0.0, /
+    ) -> bool:
         """
         Check if this shape intersects with a given (list of) topo shape(s).
 
@@ -308,7 +310,13 @@ class TopoShape(ComplexGeoData):
         ...
 
     @constmethod
-    def closestIntersectionPoint(self, tool: Union[TopoShape, Tuple[TopoShape, ...]], refPt: Base.Vector3, tolerance: float = 0.0, /) -> Optional[Base.Vector3]:
+    def closestIntersectionPoint(
+        self,
+        tool: Union[TopoShape, Tuple[TopoShape, ...]],
+        refPt: Base.Vector3,
+        tolerance: float = 0.0,
+        /,
+    ) -> Optional[Base.Vector3]:
         """
         Find the intersection point between this edge and a tool shape closest to a reference point.
 

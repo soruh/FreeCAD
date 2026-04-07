@@ -822,7 +822,7 @@ PyObject* TopoShapePy::closestIntersectionPoint(PyObject* args) const
     }
     Base::Vector3d refPnt = static_cast<Base::VectorPy*>(refPtObj)->value();
     gp_Pnt referencePoint(refPnt.x, refPnt.y, refPnt.z);
-    
+
     PY_TRY
     {
         if (tolerance <= 0.0) {
@@ -844,7 +844,9 @@ PyObject* TopoShapePy::closestIntersectionPoint(PyObject* args) const
 
         for (const auto& tool : tools) {
             TopoDS_Shape toolShape = tool.getShape();
-            if (toolShape.IsNull()) continue;
+            if (toolShape.IsNull()) {
+                continue;
+            }
 
             Bnd_Box toolBB;
             BRepBndLib::Add(toolShape, toolBB);
@@ -852,7 +854,7 @@ PyObject* TopoShapePy::closestIntersectionPoint(PyObject* args) const
 
             // Fast Reject if there is no chance of an intersection
             if (edgeBB.IsOut(toolBB)) {
-                continue; 
+                continue;
             }
 
             // Expensive boolean check to find the intersection shape
@@ -862,11 +864,14 @@ PyObject* TopoShapePy::closestIntersectionPoint(PyObject* args) const
             if (!section.IsDone() || section.Shape().IsNull()) {
                 continue;
             }
-                
+
             // find the distance between the intersection shape and the reference point
             TopoDS_Shape intersectionShape = section.Shape();
-            BRepExtrema_DistShapeShape distToRef(intersectionShape, BRepBuilderAPI_MakeVertex(referencePoint));
-            
+            BRepExtrema_DistShapeShape distToRef(
+                intersectionShape,
+                BRepBuilderAPI_MakeVertex(referencePoint)
+            );
+
             if (distToRef.IsDone() && distToRef.NbSolution() > 0) {
                 double distance = distToRef.Value();
                 if (distance < distanceToBestPoint) {
